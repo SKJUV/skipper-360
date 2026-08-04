@@ -1,3 +1,27 @@
+# Rust & Cargo build output
+/target/
+**/*.rs.bk
+
+# Documentation & plans locaux
 feasibility_analysis.md
 skipper360_plan.md
 todo.md
+
+# IDE & Éditeurs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.bak
+
+# Système & OS
+.DS_Store
+Thumbs.db
+
+# Logs & Fichiers temporaires
+*.log
+/tmp/
+.env
+.env.*
+!.env.example
