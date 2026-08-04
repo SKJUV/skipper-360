@@ -35,7 +35,11 @@ pub struct Response {
 }
 
 impl Response {
-    pub fn ok(message: impl Into<String>, data: Option<serde_json::Value>, request_id: impl Into<String>) -> Self {
+    pub fn ok(
+        message: impl Into<String>,
+        data: Option<serde_json::Value>,
+        request_id: impl Into<String>,
+    ) -> Self {
         Self {
             status: ResponseStatus::Ok,
             message: message.into(),
@@ -72,12 +76,14 @@ mod tests {
     fn test_request_response_serialization() {
         let req = Request::new("activate", serde_json::json!({}));
         let json_req = serde_json::to_string(&req).expect("Failed to serialize Request");
-        let parsed_req: Request = serde_json::from_str(&json_req).expect("Failed to deserialize Request");
+        let parsed_req: Request =
+            serde_json::from_str(&json_req).expect("Failed to deserialize Request");
         assert_eq!(parsed_req.command, "activate");
 
         let resp = Response::ok("Activated", None, &req.request_id);
         let json_resp = serde_json::to_string(&resp).expect("Failed to serialize Response");
-        let parsed_resp: Response = serde_json::from_str(&json_resp).expect("Failed to deserialize Response");
+        let parsed_resp: Response =
+            serde_json::from_str(&json_resp).expect("Failed to deserialize Response");
         assert_eq!(parsed_resp.status, ResponseStatus::Ok);
         assert_eq!(parsed_resp.message, "Activated");
     }

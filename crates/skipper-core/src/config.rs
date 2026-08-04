@@ -64,8 +64,9 @@ pub struct ConfigManager {
 
 impl ConfigManager {
     pub fn new() -> Result<Self> {
-        let base_dir = dirs::config_dir()
-            .ok_or_else(|| SkipperError::Config("Impossible de localiser le répertoire config".into()))?;
+        let base_dir = dirs::config_dir().ok_or_else(|| {
+            SkipperError::Config("Impossible de localiser le répertoire config".into())
+        })?;
         let config_dir = base_dir.join("skipper360");
         let config_file = config_dir.join("config.toml");
 
@@ -89,8 +90,13 @@ impl ConfigManager {
 
     pub fn ensure_config_dir(&self) -> Result<()> {
         if !self.config_dir.exists() {
-            fs::create_dir_all(&self.config_dir)
-                .map_err(|e| SkipperError::Config(format!("Échec de création de {}: {}", self.config_dir.display(), e)))?;
+            fs::create_dir_all(&self.config_dir).map_err(|e| {
+                SkipperError::Config(format!(
+                    "Échec de création de {}: {}",
+                    self.config_dir.display(),
+                    e
+                ))
+            })?;
         }
         Ok(())
     }
@@ -100,8 +106,13 @@ impl ConfigManager {
             return Ok(Config::default());
         }
 
-        let content = fs::read_to_string(&self.config_file)
-            .map_err(|e| SkipperError::Config(format!("Impossible de lire {}: {}", self.config_file.display(), e)))?;
+        let content = fs::read_to_string(&self.config_file).map_err(|e| {
+            SkipperError::Config(format!(
+                "Impossible de lire {}: {}",
+                self.config_file.display(),
+                e
+            ))
+        })?;
 
         toml::from_str(&content)
             .map_err(|e| SkipperError::Config(format!("Erreur de parsing TOML: {}", e)))
@@ -113,8 +124,13 @@ impl ConfigManager {
         let content = toml::to_string_pretty(config)
             .map_err(|e| SkipperError::Config(format!("Erreur de sérialisation TOML: {}", e)))?;
 
-        fs::write(&self.config_file, content)
-            .map_err(|e| SkipperError::Config(format!("Échec d'écriture dans {}: {}", self.config_file.display(), e)))?;
+        fs::write(&self.config_file, content).map_err(|e| {
+            SkipperError::Config(format!(
+                "Échec d'écriture dans {}: {}",
+                self.config_file.display(),
+                e
+            ))
+        })?;
 
         #[cfg(unix)]
         {
@@ -145,7 +161,10 @@ mod tests {
 
         let loaded = manager.load().expect("Failed to load config");
         assert_eq!(loaded.general.mode, OperatingMode::Silent);
-        assert_eq!(loaded.default_credentials.username.as_deref(), Some("testuser"));
+        assert_eq!(
+            loaded.default_credentials.username.as_deref(),
+            Some("testuser")
+        );
 
         let _ = fs::remove_dir_all(temp_dir);
     }

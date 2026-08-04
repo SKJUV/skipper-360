@@ -70,20 +70,32 @@ fn main() -> Result<()> {
         Commands::Init => commands::init::run()?,
         Commands::Status => commands::status::run()?,
         Commands::Activate => {
-            println!("{}", "🟢 Demande d'activation envoyée (intégration IPC daemon en Phase 2)".green());
+            println!(
+                "{}",
+                "🟢 Demande d'activation envoyée (intégration IPC daemon en Phase 2)".green()
+            );
         }
         Commands::Deactivate => {
-            println!("{}", "🔴 Demande de désactivation envoyée (intégration IPC daemon en Phase 2)".yellow());
+            println!(
+                "{}",
+                "🔴 Demande de désactivation envoyée (intégration IPC daemon en Phase 2)".yellow()
+            );
         }
         Commands::Mode { mode } => {
             println!("{}", format!("⚙️  Mode basculé vers: {}", mode).cyan());
         }
         Commands::Whitelist { action } => match action {
             Some(WhitelistAction::Add { command }) => {
-                println!("{}", format!("➕ Ajout à la whitelist: {}", command.join(" ")).green());
+                println!(
+                    "{}",
+                    format!("➕ Ajout à la whitelist: {}", command.join(" ")).green()
+                );
             }
             Some(WhitelistAction::Delete { command }) => {
-                println!("{}", format!("➖ Suppression de la whitelist: {}", command.join(" ")).yellow());
+                println!(
+                    "{}",
+                    format!("➖ Suppression de la whitelist: {}", command.join(" ")).yellow()
+                );
             }
             Some(WhitelistAction::List) | None => {
                 commands::status::run()?;
@@ -93,7 +105,10 @@ fn main() -> Result<()> {
             if command.is_empty() {
                 println!("{}", "❌ Veuillez préciser une commande à exécuter (ex: skipper run ssh user@server)".red());
             } else {
-                println!("{}", format!("🚀 Exécution surveillée de: {}", command.join(" ")).bold());
+                println!(
+                    "{}",
+                    format!("🚀 Exécution surveillée de: {}", command.join(" ")).bold()
+                );
             }
         }
         Commands::Reset => {

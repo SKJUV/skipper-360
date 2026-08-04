@@ -14,17 +14,31 @@ pub fn run() -> Result<()> {
 
     let password = Password::new()
         .with_prompt("🔒 Mot de passe par défaut")
-        .with_confirmation("🔒 Confirmez le mot de passe", "Les mots de passe ne correspondent pas")
+        .with_confirmation(
+            "🔒 Confirmez le mot de passe",
+            "Les mots de passe ne correspondent pas",
+        )
         .interact()?;
 
     let secret_password = SecretString::from(password);
 
     // Stockage sécurisé dans le trousseau système OS
     match KeyringManager::store_default_password(&secret_password) {
-        Ok(_) => println!("{}", "✅ Identifiants stockés dans le trousseau système.".green().bold()),
+        Ok(_) => println!(
+            "{}",
+            "✅ Identifiants stockés dans le trousseau système."
+                .green()
+                .bold()
+        ),
         Err(e) => {
-            println!("{}", format!("⚠️  Avertissement trousseau : {}", e).yellow());
-            println!("{}", "Création du fichier de configuration quand même...".dimmed());
+            println!(
+                "{}",
+                format!("⚠️  Avertissement trousseau : {}", e).yellow()
+            );
+            println!(
+                "{}",
+                "Création du fichier de configuration quand même...".dimmed()
+            );
         }
     }
 
@@ -34,10 +48,28 @@ pub fn run() -> Result<()> {
 
     manager.save(&config)?;
 
-    println!("{}", format!("📁 Configuration créée : {}", manager.config_path().display()).dimmed());
-    println!("{}", format!("🔧 Mode : {} | ⏱  Timeout : {}s", config.general.mode.cyan(), config.general.timeout_seconds.to_string().yellow()).bold());
+    println!(
+        "{}",
+        format!(
+            "📁 Configuration créée : {}",
+            manager.config_path().display()
+        )
+        .dimmed()
+    );
+    println!(
+        "{}",
+        format!(
+            "🔧 Mode : {} | ⏱  Timeout : {}s",
+            config.general.mode.cyan(),
+            config.general.timeout_seconds.to_string().yellow()
+        )
+        .bold()
+    );
     println!();
-    println!("{}", "💡 Conseil : Tapez 'skipper activate' pour démarrer la surveillance.".green());
+    println!(
+        "{}",
+        "💡 Conseil : Tapez 'skipper activate' pour démarrer la surveillance.".green()
+    );
 
     Ok(())
 }

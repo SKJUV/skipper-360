@@ -30,31 +30,49 @@ impl KeyringManager {
 
     fn store(key: &str, password: &SecretString) -> Result<()> {
         use secrecy::ExposeSecret;
-        let entry = Entry::new(SERVICE_NAME, key)
-            .map_err(|e| SkipperError::Keyring(format!("Erreur d'initialisation keyring pour {}: {}", key, e)))?;
+        let entry = Entry::new(SERVICE_NAME, key).map_err(|e| {
+            SkipperError::Keyring(format!(
+                "Erreur d'initialisation keyring pour {}: {}",
+                key, e
+            ))
+        })?;
 
-        entry.set_password(password.expose_secret())
-            .map_err(|e| SkipperError::Keyring(format!("Échec de stockage du mot de passe pour {}: {}", key, e)))?;
+        entry.set_password(password.expose_secret()).map_err(|e| {
+            SkipperError::Keyring(format!(
+                "Échec de stockage du mot de passe pour {}: {}",
+                key, e
+            ))
+        })?;
 
         Ok(())
     }
 
     fn get(key: &str) -> Result<SecretString> {
-        let entry = Entry::new(SERVICE_NAME, key)
-            .map_err(|e| SkipperError::Keyring(format!("Erreur d'accès keyring pour {}: {}", key, e)))?;
+        let entry = Entry::new(SERVICE_NAME, key).map_err(|e| {
+            SkipperError::Keyring(format!("Erreur d'accès keyring pour {}: {}", key, e))
+        })?;
 
-        let secret = entry.get_password()
-            .map_err(|e| SkipperError::Keyring(format!("Échec de récupération du mot de passe pour {}: {}", key, e)))?;
+        let secret = entry.get_password().map_err(|e| {
+            SkipperError::Keyring(format!(
+                "Échec de récupération du mot de passe pour {}: {}",
+                key, e
+            ))
+        })?;
 
         Ok(SecretString::from(secret))
     }
 
     fn delete(key: &str) -> Result<()> {
-        let entry = Entry::new(SERVICE_NAME, key)
-            .map_err(|e| SkipperError::Keyring(format!("Erreur d'accès keyring pour {}: {}", key, e)))?;
+        let entry = Entry::new(SERVICE_NAME, key).map_err(|e| {
+            SkipperError::Keyring(format!("Erreur d'accès keyring pour {}: {}", key, e))
+        })?;
 
-        entry.delete_credential()
-            .map_err(|e| SkipperError::Keyring(format!("Échec de suppression du mot de passe pour {}: {}", key, e)))?;
+        entry.delete_credential().map_err(|e| {
+            SkipperError::Keyring(format!(
+                "Échec de suppression du mot de passe pour {}: {}",
+                key, e
+            ))
+        })?;
 
         Ok(())
     }

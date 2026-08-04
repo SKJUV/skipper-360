@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum OperatingMode {
+    #[default]
     Standard,
     Silent,
 }
@@ -14,12 +15,6 @@ impl fmt::Display for OperatingMode {
             OperatingMode::Standard => write!(f, "Standard"),
             OperatingMode::Silent => write!(f, "Silent"),
         }
-    }
-}
-
-impl Default for OperatingMode {
-    fn default() -> Self {
-        OperatingMode::Standard
     }
 }
 
@@ -39,17 +34,12 @@ impl fmt::Display for SkipperStatus {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum MatchMode {
     Exact,
+    #[default]
     Prefix,
-}
-
-impl Default for MatchMode {
-    fn default() -> Self {
-        MatchMode::Prefix
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
