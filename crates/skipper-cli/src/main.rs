@@ -11,7 +11,7 @@ use skipper_core::Request;
 #[command(
     name = "skipper",
     version,
-    about = "🛡️ Skipper 360 — Gardien automatique de mots de passe",
+    about = " Skipper 360 — Gardien automatique de mots de passe",
     long_about = "Skipper 360 est un outil CLI et daemon qui surveille les PTYs et injecte automatiquement les mots de passe de manière sécurisée."
 )]
 struct Cli {
@@ -85,7 +85,7 @@ async fn main() -> Result<()> {
 
             let req = Request::new("activate", serde_json::json!({}));
             match client.send_request(req).await {
-                Ok(resp) => println!("{}", format!("🟢 {}", resp.message).green().bold()),
+                Ok(resp) => println!("{}", format!(" {}", resp.message).green().bold()),
                 Err(e) => eprintln!("{}", format!("❌ Échec d'activation : {}", e).red()),
             }
         }
@@ -93,7 +93,7 @@ async fn main() -> Result<()> {
             let client = IpcClient::new()?;
             let req = Request::new("deactivate", serde_json::json!({}));
             match client.send_request(req).await {
-                Ok(resp) => println!("{}", format!("🔴 {}", resp.message).yellow().bold()),
+                Ok(resp) => println!("{}", format!(" {}", resp.message).yellow().bold()),
                 Err(e) => eprintln!("{}", format!("❌ Échec de désactivation : {}", e).red()),
             }
         }
@@ -101,7 +101,7 @@ async fn main() -> Result<()> {
             let client = IpcClient::new()?;
             let req = Request::new("set_mode", serde_json::json!({ "mode": mode }));
             match client.send_request(req).await {
-                Ok(resp) => println!("{}", format!("⚙️  {}", resp.message).cyan().bold()),
+                Ok(resp) => println!("{}", format!("  {}", resp.message).cyan().bold()),
                 Err(e) => eprintln!(
                     "{}",
                     format!("❌ Échec de changement de mode : {}", e).red()

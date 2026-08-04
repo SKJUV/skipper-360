@@ -4,7 +4,7 @@ use owo_colors::OwoColorize;
 use skipper_core::{ConfigManager, Request, SkipperStatus};
 
 pub async fn run() -> Result<()> {
-    println!("{}", "🛡️  Skipper 360 — État du Système".bold().blue());
+    println!("{}", "  Skipper 360 — État du Système".bold().blue());
     println!("{}", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".dimmed());
 
     let manager = ConfigManager::new()?;
@@ -37,8 +37,8 @@ pub async fn run() -> Result<()> {
                 };
 
                 println!("   État     : {}", status);
-                println!("   Mode     : 📢 {}", mode_str.cyan());
-                println!("   Daemon   : ✅ PID {}", pid.to_string().yellow());
+                println!("   Mode     :  {}", mode_str.cyan());
+                println!("   Daemon   :  PID {}", pid.to_string().yellow());
                 println!(
                     "   Sessions : 🖥️  {} actives",
                     active_sessions.to_string().cyan()
@@ -48,21 +48,21 @@ pub async fn run() -> Result<()> {
                     config.general.timeout_seconds.to_string().yellow()
                 );
                 println!(
-                    "   Config   : 📁 {}",
+                    "   Config   :  {}",
                     manager.config_path().display().to_string().dimmed()
                 );
             }
         }
         Err(_) => {
             println!("   État     : {}", SkipperStatus::Inactive);
-            println!("   Daemon   : 🔴 Non démarré");
-            println!("   Mode     : 📢 {}", config.general.mode.cyan());
+            println!("   Daemon   :  Non démarré");
+            println!("   Mode     :  {}", config.general.mode.cyan());
             println!(
                 "   Timeout  : ⏱  {} secondes",
                 config.general.timeout_seconds.to_string().yellow()
             );
             println!(
-                "   Config   : 📁 {}",
+                "   Config   :  {}",
                 manager.config_path().display().to_string().dimmed()
             );
         }

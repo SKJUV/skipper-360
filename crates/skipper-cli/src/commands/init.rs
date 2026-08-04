@@ -5,11 +5,11 @@ use secrecy::SecretString;
 use skipper_core::{ConfigManager, KeyringManager};
 
 pub fn run() -> Result<()> {
-    println!("{}", "🛡️  Skipper 360 — Initialisation".bold().blue());
+    println!("{}", "  Skipper 360 — Initialisation".bold().blue());
     println!("{}", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".dimmed());
 
     let username: String = Input::new()
-        .with_prompt("👤 Nom d'utilisateur")
+        .with_prompt(" Nom d'utilisateur")
         .interact_text()?;
 
     let password = Password::new()
@@ -26,14 +26,14 @@ pub fn run() -> Result<()> {
     match KeyringManager::store_default_password(&secret_password) {
         Ok(_) => println!(
             "{}",
-            "✅ Identifiants stockés dans le trousseau système."
+            " Identifiants stockés dans le trousseau système."
                 .green()
                 .bold()
         ),
         Err(e) => {
             println!(
                 "{}",
-                format!("⚠️  Avertissement trousseau : {}", e).yellow()
+                format!("  Avertissement trousseau : {}", e).yellow()
             );
             println!(
                 "{}",
@@ -51,7 +51,7 @@ pub fn run() -> Result<()> {
     println!(
         "{}",
         format!(
-            "📁 Configuration créée : {}",
+            " Configuration créée : {}",
             manager.config_path().display()
         )
         .dimmed()
@@ -68,7 +68,7 @@ pub fn run() -> Result<()> {
     println!();
     println!(
         "{}",
-        "💡 Conseil : Tapez 'skipper activate' pour démarrer la surveillance.".green()
+        " Conseil : Tapez 'skipper activate' pour démarrer la surveillance.".green()
     );
 
     Ok(())

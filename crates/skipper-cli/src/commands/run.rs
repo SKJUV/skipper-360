@@ -31,13 +31,13 @@ pub async fn run(command: &[String]) -> Result<()> {
             if code != 0 {
                 println!(
                     "{}",
-                    format!("⚠️ Commande terminée avec le code de sortie {}", code).yellow()
+                    format!("Commande terminée avec le code de sortie {}", code).yellow()
                 );
                 std::process::exit(code as i32);
             }
         }
     }
 
-    println!("{}", format!("✅ {}", response.message).green());
+    println!("{}", format!(" {}", response.message).green());
     Ok(())
 }
