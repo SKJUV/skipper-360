@@ -1,42 +1,42 @@
-name: 🐛 Bug Report
+name: Bug Report
 description: Report a bug or unintended behavior in Skipper 360
 title: "bug: "
 labels: ["bug"]
 body:
   - type: markdown
-    attributes:
-      value: |
-        Thank you for reporting a bug! Please ensure your report does not contain any passwords or private data.
+ attributes:
+ value: |
+ Thank you for reporting a bug! Please ensure your report does not contain any passwords or private data.
   - type: textarea
-    id: description
-    attributes:
-      label: Bug Description
-      description: A clear description of what the bug is.
-      placeholder: "Describe what happened..."
-    validations:
-      required: true
+ id: description
+ attributes:
+ label: Bug Description
+ description: A clear description of what the bug is.
+ placeholder: "Describe what happened..."
+ validations:
+ required: true
   - type: textarea
-    id: reproduction
-    attributes:
-      label: Steps to Reproduce
-      description: Step by step instructions to reproduce the behavior.
-      placeholder: |
-        1. Run 'skipper activate'
-        2. Execute 'skipper run ssh user@server'
-        3. Observe prompt...
-    validations:
-      required: true
+ id: reproduction
+ attributes:
+ label: Steps to Reproduce
+ description: Step by step instructions to reproduce the behavior.
+ placeholder: |
+ 1. Run 'skipper activate'
+ 2. Execute 'skipper run ssh user@server'
+ 3. Observe prompt...
+ validations:
+ required: true
   - type: textarea
-    id: environment
-    attributes:
-      label: Environment Info
-      description: OS distribution, Kernel version, Rust version, Desktop environment / Window manager.
-      placeholder: "Arch Linux, Kernel 6.10, GNOME / Wayland, Rust 1.80"
-    validations:
-      required: true
+ id: environment
+ attributes:
+ label: Environment Info
+ description: OS distribution, Kernel version, Rust version, Desktop environment / Window manager.
+ placeholder: "Arch Linux, Kernel 6.10, GNOME / Wayland, Rust 1.80"
+ validations:
+ required: true
   - type: textarea
-    id: logs
-    attributes:
-      label: Relevant Logs
-      description: Logs from ~/.config/skipper360/skipper.log (Ensure no sensitive data is included!)
-      render: shell
+ id: logs
+ attributes:
+ label: Relevant Logs
+ description: Logs from ~/.config/skipper360/skipper.log (Ensure no sensitive data is included!)
+ render: shell

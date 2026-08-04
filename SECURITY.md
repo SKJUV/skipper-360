@@ -1,10 +1,10 @@
-# 🛡️ Security Policy — Skipper 360
+# Security Policy — Skipper 360
 
 The **Skipper 360** team takes the security of our users' credentials and system prompts extremely seriously. As an automated credential injection CLI daemon operating on Linux pseudo-terminals (PTYs), Skipper 360 is designed with a defense-in-depth security model.
 
 ---
 
-## 📋 Supported Versions
+## Supported Versions
 
 Only the latest release on the `main` branch receives active security updates and vulnerability patches.
 
@@ -15,7 +15,7 @@ Only the latest release on the `main` branch receives active security updates an
 
 ---
 
-## 🔒 Security Architecture & Guarantees
+## Security Architecture & Guarantees
 
 Skipper 360 enforces non-negotiable security controls:
 
@@ -28,7 +28,7 @@ Skipper 360 enforces non-negotiable security controls:
 
 ---
 
-## 🚨 Reporting a Vulnerability
+## Reporting a Vulnerability
 
 **Do NOT report security vulnerabilities in public GitHub issues.**
 
@@ -46,9 +46,9 @@ If you discover a security vulnerability, flaw in prompt detection memory isolat
 
 ---
 
-## 🤝 Responsible Disclosure Guidelines
+## Responsible Disclosure Guidelines
 
 - Give us reasonable time to investigate and patch the issue before making any public disclosure.
 - Do not exploit security vulnerabilities to access data without authorization.
 
-Thank you for helping keep Skipper 360 and its community safe! 🚀
+Thank you for helping keep Skipper 360 and its community safe! 

@@ -1,6 +1,6 @@
 <div align="center">
 
-  <h1>🛡️ Skipper 360</h1>
+  <h1> Skipper 360</h1>
 
   <p><strong>Gardien d'arrière-plan intelligent et sécurisé pour l'injection automatique de mots de passe dans les PTY Linux.</strong></p>
 
@@ -24,7 +24,7 @@
   ---
 </div>
 
-## 🌟 Présentation
+## Présentation
 
 **Skipper 360** est un outil CLI et daemon d'arrière-plan écrit en **Rust**. Il écoute et intercepte intelligemment les demandes de mot de passe (`sudo`, `ssh`, `pacman`, `gpg`, etc.) exécutées dans des pseudo-terminaux (PTY) virtuels et y injecte en toute sécurité vos identifiants configurés.
 
@@ -32,18 +32,18 @@ Fini la saisie répétitive de vos mots de passe en ligne de commande : Skipper 
 
 ---
 
-## ⚡ Fonctionnalités
+## Fonctionnalités
 
-- 🔐 **Sécurité Maximale** : Aucun mot de passe stocké en clair sur le disque. Intégration directe avec Secret Service (GNOME Keyring / KWallet / KeePassXC).
-- 🧠 **Détection Intelligente** : Détection des prompts password via regex configurables et vérification du mode `no-echo` de `termios`.
-- 📋 **Whitelist Granulaire** : Associez des mots de passe spécifiques à des commandes ou serveurs cibles (`ssh user@prod`, `sudo pacman -Syu`).
-- ⚡ **Architecture Daemon + CLI** : Processus d'arrière-plan haute performance propulsé par **Tokio**, contrôlé via un socket Unix sécurisé (`0o600`).
-- 🛡️ **Protection Mémoire** : Emploi systématique de `SecretString`, nettoyage immédiat mémoire (`zeroize`), verrouillage de pages (`mlock`) et désactivation des core dumps (`PR_SET_DUMPABLE`).
-- 📢 **Notifications Configurables** : Mode *Standard* avec bip terminal et confirmation visuelle, ou mode *Silent* pour une discrétion totale.
+- **Sécurité Maximale** : Aucun mot de passe stocké en clair sur le disque. Intégration directe avec Secret Service (GNOME Keyring / KWallet / KeePassXC).
+- **Détection Intelligente** : Détection des prompts password via regex configurables et vérification du mode `no-echo` de `termios`.
+- **Whitelist Granulaire** : Associez des mots de passe spécifiques à des commandes ou serveurs cibles (`ssh user@prod`, `sudo pacman -Syu`).
+- **Architecture Daemon + CLI** : Processus d'arrière-plan haute performance propulsé par **Tokio**, contrôlé via un socket Unix sécurisé (`0o600`).
+- **Protection Mémoire** : Emploi systématique de `SecretString`, nettoyage immédiat mémoire (`zeroize`), verrouillage de pages (`mlock`) et désactivation des core dumps (`PR_SET_DUMPABLE`).
+- **Notifications Configurables** : Mode *Standard* avec bip terminal et confirmation visuelle, ou mode *Silent* pour une discrétion totale.
 
 ---
 
-## 🛠️ Tech Stack & Écosystème
+## Tech Stack & Écosystème
 
 | Composant | Technologie | Description |
 | :--- | :--- | :--- |
@@ -56,7 +56,7 @@ Fini la saisie répétitive de vos mots de passe en ligne de commande : Skipper 
 
 ---
 
-## 📐 Architecture
+## Architecture
 
 Skipper 360 est structuré sous la forme d'un **workspace Cargo** modulaire découplé en trois crates distinctes :
 
@@ -70,50 +70,50 @@ skipper-360/
 
 ```mermaid
 flowchart TB
-    subgraph CLI_Client ["CLI Client"]
-        CLI["skipper CLI - clap v4"]
-        DIALOG["dialoguer - saisie interactive"]
-    end
+ subgraph CLI_Client ["CLI Client"]
+ CLI["skipper CLI - clap v4"]
+ DIALOG["dialoguer - saisie interactive"]
+ end
 
-    subgraph Daemon ["Daemon skipperd"]
-        LISTENER["UDS Listener - tokio"]
-        PTY_MGR["PTY Manager - portable-pty"]
-        DETECTOR["Prompt Detector - regex"]
-        INJECTOR["Password Injector"]
-        CONFIG_MGR["Config Manager - serde + toml"]
-        KEYRING_MGR["Keyring Manager - keyring + secrecy"]
-    end
+ subgraph Daemon ["Daemon skipperd"]
+ LISTENER["UDS Listener - tokio"]
+ PTY_MGR["PTY Manager - portable-pty"]
+ DETECTOR["Prompt Detector - regex"]
+ INJECTOR["Password Injector"]
+ CONFIG_MGR["Config Manager - serde + toml"]
+ KEYRING_MGR["Keyring Manager - keyring + secrecy"]
+ end
 
-    subgraph System ["Système"]
-        UDS["Unix Domain Socket - skipper.sock"]
-        KEYRING["OS Keyring - Secret Service"]
-        CONFIG["Config File - config.toml"]
-        PID["PID File - skipper.pid"]
-        LOG["Log File - skipper.log"]
-    end
+ subgraph System ["Système"]
+ UDS["Unix Domain Socket - skipper.sock"]
+ KEYRING["OS Keyring - Secret Service"]
+ CONFIG["Config File - config.toml"]
+ PID["PID File - skipper.pid"]
+ LOG["Log File - skipper.log"]
+ end
 
-    subgraph Child_Process ["Processus Enfant"]
-        CHILD["Commande utilisateur - sudo, ssh, pacman"]
-        PTY_SLAVE["PTY Slave - terminal virtuel"]
-    end
+ subgraph Child_Process ["Processus Enfant"]
+ CHILD["Commande utilisateur - sudo, ssh, pacman"]
+ PTY_SLAVE["PTY Slave - terminal virtuel"]
+ end
 
-    CLI -->|"JSON via UDS"| LISTENER
-    CLI --> DIALOG
-    LISTENER --> PTY_MGR
-    LISTENER --> CONFIG_MGR
-    PTY_MGR --> DETECTOR
-    DETECTOR -->|"prompt detecte"| INJECTOR
-    INJECTOR -->|"ecrit password"| PTY_MGR
-    CONFIG_MGR --> CONFIG
-    KEYRING_MGR --> KEYRING
-    PTY_MGR --> PTY_SLAVE
-    PTY_SLAVE --> CHILD
-    INJECTOR --> KEYRING_MGR
+ CLI -->|"JSON via UDS"| LISTENER
+ CLI --> DIALOG
+ LISTENER --> PTY_MGR
+ LISTENER --> CONFIG_MGR
+ PTY_MGR --> DETECTOR
+ DETECTOR -->|"prompt detecte"| INJECTOR
+ INJECTOR -->|"ecrit password"| PTY_MGR
+ CONFIG_MGR --> CONFIG
+ KEYRING_MGR --> KEYRING
+ PTY_MGR --> PTY_SLAVE
+ PTY_SLAVE --> CHILD
+ INJECTOR --> KEYRING_MGR
 ```
 
 ---
 
-## 🚀 Installation
+## Installation
 
 ### Via Cargo (depuis crates.io)
 
@@ -137,7 +137,7 @@ cargo build --release
 
 ---
 
-## 🎮 Guide d'Utilisation
+## Guide d'Utilisation
 
 ### 1. Initialisation
 
@@ -185,7 +185,7 @@ skipper run ssh user@serveur-prod
 
 ---
 
-## 🛡️ Modèle de Sécurité
+## Modèle de Sécurité
 
 La sécurité des identifiants est la priorité absolue de Skipper 360 :
 
@@ -197,7 +197,7 @@ La sécurité des identifiants est la priorité absolue de Skipper 360 :
 
 ---
 
-## 🤝 Contribution
+## Contribution
 
 Les contributions de la communauté sont les bienvenues ! Consultez le fichier [CONTRIBUTING.md](CONTRIBUTING.md) pour en savoir plus sur la configuration de l'environnement de développement et les règles de soumission de Pull Requests.
 
@@ -205,7 +205,7 @@ Merci de respecter notre [Code de Conduite](CODE_OF_CONDUCT.md) lors de vos inte
 
 ---
 
-## 📄 Licence
+## Licence
 
 Projet distribué sous la double licence **MIT** et **Apache 2.0**.
 Voir les fichiers [LICENSE-MIT](LICENSE-MIT) et [LICENSE-APACHE](LICENSE-APACHE) pour plus de détails.

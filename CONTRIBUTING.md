@@ -1,16 +1,16 @@
-# 🤝 Guide de Contribution — Skipper 360
+# Guide de Contribution — Skipper 360
 
 Merci d'envisager de contribuer à **Skipper 360** ! Skipper 360 est un projet open-source et communautaire. Nous apprécions grandement toutes les contributions : corrections de bugs, nouvelles fonctionnalités, améliorations de documentation, ou retours d'expérience.
 
 ---
 
-## 📜 Code de Conduite
+## Code de Conduite
 
 En participant à ce projet, vous vous engagez à respecter notre [Code de Conduite](CODE_OF_CONDUCT.md). Veuillez le lire afin de maintenir un environnement accueillant, respectueux et constructif pour tout le monde.
 
 ---
 
-## 💡 Comment Contribuer ?
+## Comment Contribuer ?
 
 ### 1. Signaler un Bug
 
@@ -29,18 +29,18 @@ Si vous avez une idée d'amélioration ou de nouvelle fonctionnalité :
 
 ---
 
-## 🛠️ Environnement de Développement
+## Environnement de Développement
 
 ### Prérequis
 
 - **Rust** 1.75+ et Cargo (via [rustup.rs](https://rustup.rs))
 - Dépendances système (sur Debian/Ubuntu) :
   ```bash
-  sudo apt install build-essential pkg-config libdbus-1-dev
+ sudo apt install build-essential pkg-config libdbus-1-dev
   ```
 - Dépendances système (sur Arch Linux) :
   ```bash
-  sudo pacman -S base-devel pkgconf dbus
+ sudo pacman -S base-devel pkgconf dbus
   ```
 
 ### Cloner et Compiler le Projet
@@ -59,7 +59,7 @@ cargo check --workspace
 
 ---
 
-## 🧪 Tests et Qualité du Code
+## Tests et Qualité du Code
 
 Toute contribution de code doit respecter les standards de qualité de l'écosystème Rust. Avant d'ouvrir une Pull Request, assurez-vous que toutes les commandes suivantes s'exécutent sans erreur ni avertissement :
 
@@ -87,7 +87,7 @@ cargo test --workspace
 
 ---
 
-## 🛡️ Règles de Sécurité Non-Négociables
+## Règles de Sécurité Non-Négociables
 
 Skipper 360 manipulate des données hautement sensibles. Tout ajout ou modification de code doit strictement se conformer aux principes de sécurité suivants :
 
@@ -97,7 +97,7 @@ Skipper 360 manipulate des données hautement sensibles. Tout ajout ou modificat
 
 ---
 
-## 📝 Conventions de Commit
+## Conventions de Commit
 
 Nous suivons les conventions [Conventional Commits](https://www.conventionalcommits.org/) pour garder un historique clair et automatiser la génération des notes de version :
 
@@ -111,11 +111,11 @@ Nous suivons les conventions [Conventional Commits](https://www.conventionalcomm
 
 ---
 
-## 🔀 Processus de Pull Request (PR)
+## Processus de Pull Request (PR)
 
 1. Forkez le dépôt et créez une branche de fonctionnalité depuis `main` :
    ```bash
-   git checkout -b feat/nom-de-ma-feature
+ git checkout -b feat/nom-de-ma-feature
    ```
 2. Écrivez du code propre, documenté et accompagné de tests.
 3. Assurez-vous que `cargo test`, `cargo fmt` et `cargo clippy` passent sans soucis.
@@ -123,4 +123,4 @@ Nous suivons les conventions [Conventional Commits](https://www.conventionalcomm
 5. Décrivez clairement le but de la PR et faites référence aux issues associées.
 6. Répondez aux retours de la revue de code avec bienveillance.
 
-Merci encore pour votre investissement dans **Skipper 360** ! 🚀
+Merci encore pour votre investissement dans **Skipper 360** ! 

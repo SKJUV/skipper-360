@@ -1,4 +1,4 @@
-## 📝 Description
+## Description
 
 Please include a concise summary of the changes made and the motivation behind them. If this PR closes or relates to an open issue, link it below.
 
@@ -6,19 +6,19 @@ Fixes #(issue)
 
 ---
 
-## 🛠️ Type of Change
+## Type of Change
 
-- [ ] 🐛 **Bug fix** (non-breaking change fixing an issue)
-- [ ] 🚀 **New feature** (non-breaking change adding functionality)
-- [ ] ⚡ **Performance improvement**
-- [ ] ♻️ **Refactoring** (code structure improvement with no logic changes)
-- [ ] 🛡️ **Security enhancement**
-- [ ] 📚 **Documentation update**
-- [ ] 🔧 **CI/CD or Tooling update**
+- [ ]  **Bug fix** (non-breaking change fixing an issue)
+- [ ]  **New feature** (non-breaking change adding functionality)
+- [ ]  **Performance improvement**
+- [ ]  **Refactoring** (code structure improvement with no logic changes)
+- [ ]  **Security enhancement**
+- [ ]  **Documentation update**
+- [ ]  **CI/CD or Tooling update**
 
 ---
 
-## 🔒 Security Compliance Checklist
+## Security Compliance Checklist
 
 - [ ] No passwords or sensitive inputs are stored or printed in plaintext.
 - [ ] Any new credential types use `secrecy::SecretString` and derive `ZeroizeOnDrop`.
@@ -27,7 +27,7 @@ Fixes #(issue)
 
 ---
 
-## ✅ Quality Checklist
+## Quality Checklist
 
 - [ ] `cargo fmt --all -- --check` passes without formatting changes.
 - [ ] `cargo clippy --workspace --all-targets -- -D warnings` runs without warnings.
