@@ -1,0 +1,23 @@
+[package]
+name = "skipper-cli"
+version = "0.1.0"
+edition = "2021"
+authors = ["Skipper 360 Contributors"]
+description = "CLI client for Skipper 360 password keeper."
+license = "MIT OR Apache-2.0"
+
+[[bin]]
+name = "skipper"
+path = "src/main.rs"
+
+[dependencies]
+skipper-core = { path = "../skipper-core" }
+tokio = { workspace = true }
+clap = { workspace = true }
+dialoguer = { workspace = true }
+owo-colors = { workspace = true }
+indicatif = { workspace = true }
+secrecy = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
