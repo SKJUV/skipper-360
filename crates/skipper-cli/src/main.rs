@@ -1,8 +1,11 @@
 mod commands;
+mod ipc;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use ipc::IpcClient;
 use owo_colors::OwoColorize;
+use skipper_core::Request;
 
 #[derive(Parser)]
 #[command(
@@ -63,26 +66,39 @@ enum WhitelistAction {
     List,
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
         Commands::Init => commands::init::run()?,
-        Commands::Status => commands::status::run()?,
+        Commands::Status => commands::status::run().await?,
         Commands::Activate => {
-            println!(
-                "{}",
-                "🟢 Demande d'activation envoyée (intégration IPC daemon en Phase 2)".green()
-            );
+            let client = IpcClient::new()?;
+            let req = Request::new("activate", serde_json::json!({}));
+            match client.send_request(req).await {
+                Ok(resp) => println!("{}", format!("🟢 {}", resp.message).green().bold()),
+                Err(e) => eprintln!("{}", format!("❌ Échec d'activation : {}", e).red()),
+            }
         }
         Commands::Deactivate => {
-            println!(
-                "{}",
-                "🔴 Demande de désactivation envoyée (intégration IPC daemon en Phase 2)".yellow()
-            );
+            let client = IpcClient::new()?;
+            let req = Request::new("deactivate", serde_json::json!({}));
+            match client.send_request(req).await {
+                Ok(resp) => println!("{}", format!("🔴 {}", resp.message).yellow().bold()),
+                Err(e) => eprintln!("{}", format!("❌ Échec de désactivation : {}", e).red()),
+            }
         }
         Commands::Mode { mode } => {
-            println!("{}", format!("⚙️  Mode basculé vers: {}", mode).cyan());
+            let client = IpcClient::new()?;
+            let req = Request::new("set_mode", serde_json::json!({ "mode": mode }));
+            match client.send_request(req).await {
+                Ok(resp) => println!("{}", format!("⚙️  {}", resp.message).cyan().bold()),
+                Err(e) => eprintln!(
+                    "{}",
+                    format!("❌ Échec de changement de mode : {}", e).red()
+                ),
+            }
         }
         Commands::Whitelist { action } => match action {
             Some(WhitelistAction::Add { command }) => {
@@ -98,7 +114,7 @@ fn main() -> Result<()> {
                 );
             }
             Some(WhitelistAction::List) | None => {
-                commands::status::run()?;
+                commands::status::run().await?;
             }
         },
         Commands::Run { command } => {

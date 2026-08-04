@@ -767,6 +767,7 @@ dependencies = [
  "anyhow",
  "clap",
  "dialoguer",
+ "dirs",
  "indicatif",
  "owo-colors",
  "secrecy",
@@ -798,6 +799,7 @@ name = "skipperd"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "dirs",
  "nix 0.29.0",
  "portable-pty",
  "serde",

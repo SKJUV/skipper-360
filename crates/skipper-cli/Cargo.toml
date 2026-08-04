@@ -20,4 +20,5 @@ indicatif = { workspace = true }
 secrecy = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+dirs = { workspace = true }
 anyhow = { workspace = true }
