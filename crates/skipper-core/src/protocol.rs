@@ -74,7 +74,7 @@ mod tests {
 
     #[test]
     fn test_request_response_serialization() {
-        let req = Request::new("activate", serde_json::json!({}));
+        let req = Request::new("activate ", serde_json::json!({}));
         let json_req = serde_json::to_string(&req).expect("Failed to serialize Request");
         let parsed_req: Request =
             serde_json::from_str(&json_req).expect("Failed to deserialize Request");
