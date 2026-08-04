@@ -75,6 +75,14 @@ async fn main() -> Result<()> {
         Commands::Status => commands::status::run().await?,
         Commands::Activate => {
             let client = IpcClient::new()?;
+            if let Err(e) = client.ensure_daemon_running().await {
+                eprintln!(
+                    "{}",
+                    format!("❌ Échec au démarrage du daemon : {}", e).red()
+                );
+                return Ok(());
+            }
+
             let req = Request::new("activate", serde_json::json!({}));
             match client.send_request(req).await {
                 Ok(resp) => println!("{}", format!("🟢 {}", resp.message).green().bold()),

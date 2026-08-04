@@ -16,10 +16,48 @@ impl IpcClient {
         Ok(Self { socket_path })
     }
 
+    pub fn is_daemon_running(&self) -> bool {
+        self.socket_path.exists()
+    }
+
+    pub async fn ensure_daemon_running(&self) -> Result<()> {
+        if self.is_daemon_running() {
+            return Ok(());
+        }
+
+        println!("⚙️  Démarrage automatique du daemon skipperd en arrière-plan...");
+
+        let spawn_res = std::process::Command::new("skipperd")
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn();
+
+        match spawn_res {
+            Ok(_) => {
+                // Wait up to 1.5 seconds for socket file to be created by daemon
+                for _ in 0..15 {
+                    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                    if self.is_daemon_running() {
+                        return Ok(());
+                    }
+                }
+                Err(anyhow!(
+                    "Le daemon skipperd a été démarré mais le socket IPC n'a pas répondu à temps ({})",
+                    self.socket_path.display()
+                ))
+            }
+            Err(e) => Err(anyhow!(
+                "Impossible d'exécuter l'exécutable 'skipperd' ({}) : vérifiez qu'il est présent dans votre PATH.",
+                e
+            )),
+        }
+    }
+
     pub async fn send_request(&self, req: Request) -> Result<Response> {
         if !self.socket_path.exists() {
             return Err(anyhow!(
-                "Le daemon skipperd ne semble pas démarré (socket introuvable : {}).\n💡 Conseil: Démarrer le daemon avec 'skipperd' ou 'skipper activate'.",
+                "Le daemon skipperd n'est pas démarré (socket introuvable : {}).\n💡 Conseil : Lancer 'skipper activate' pour démarrer automatiquement le daemon.",
                 self.socket_path.display()
             ));
         }
