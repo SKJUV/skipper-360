@@ -126,14 +126,7 @@ async fn main() -> Result<()> {
             }
         },
         Commands::Run { command } => {
-            if command.is_empty() {
-                println!("{}", "❌ Veuillez préciser une commande à exécuter (ex: skipper run ssh user@server)".red());
-            } else {
-                println!(
-                    "{}",
-                    format!("🚀 Exécution surveillée de: {}", command.join(" ")).bold()
-                );
-            }
+            commands::run::run(&command).await?;
         }
         Commands::Reset => {
             println!("{}", "⚠️ Réinitialisation effectuée.".yellow());

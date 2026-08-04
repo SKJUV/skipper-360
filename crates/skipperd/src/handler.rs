@@ -1,3 +1,5 @@
+use crate::pty::manager::PtyManager;
+use crate::pty::session::PtySession;
 use crate::state::SharedState;
 use skipper_core::{ConfigManager, OperatingMode, Request, Response, SkipperStatus};
 
@@ -47,6 +49,51 @@ pub async fn handle_request(req: Request, state: SharedState) -> Response {
             }
 
             Response::ok(format!("Mode changé vers {}", mode), None, req.request_id)
+        }
+        "run" => {
+            let command_args = req
+                .args
+                .get("command")
+                .and_then(|v| serde_json::from_value::<Vec<String>>(v.clone()).ok())
+                .unwrap_or_default();
+
+            if command_args.is_empty() {
+                return Response::error(
+                    "Aucune commande spécifiée dans la requête run",
+                    req.request_id,
+                );
+            }
+
+            let config = {
+                let state_guard = state.read().await;
+                state_guard.config.clone()
+            };
+
+            PtyManager::increment_active_sessions(&state).await;
+
+            let result = tokio::task::spawn_blocking(move || {
+                PtySession::run_and_stream(&command_args, &config, |_chunk| {
+                    // Output streamed directly via PTY master to child terminal
+                })
+            })
+            .await;
+
+            PtyManager::decrement_active_sessions(&state).await;
+
+            match result {
+                Ok(Ok(exit_code)) => Response::ok(
+                    format!("Exécution terminée avec le code {}", exit_code),
+                    Some(serde_json::json!({ "exit_code": exit_code })),
+                    req.request_id,
+                ),
+                Ok(Err(e)) => {
+                    Response::error(format!("Erreur d'exécution PTY: {}", e), req.request_id)
+                }
+                Err(e) => Response::error(
+                    format!("Échec de la tâche d'exécution: {}", e),
+                    req.request_id,
+                ),
+            }
         }
         unknown => Response::error(format!("Commande inconnue: {}", unknown), req.request_id),
     }

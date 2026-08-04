@@ -802,12 +802,15 @@ dependencies = [
  "dirs",
  "nix 0.29.0",
  "portable-pty",
+ "regex",
+ "secrecy",
  "serde",
  "serde_json",
  "skipper-core",
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "zeroize",
 ]
 
 [[package]]
