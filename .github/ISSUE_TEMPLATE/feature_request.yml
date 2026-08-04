@@ -4,26 +4,26 @@ title: "feat: "
 labels: ["enhancement"]
 body:
   - type: markdown
- attributes:
- value: |
- Have an idea to make Skipper 360 better? We'd love to hear it!
+    attributes:
+      value: |
+        Have an idea to make Skipper 360 better? We'd love to hear it!
   - type: textarea
- id: problem
- attributes:
- label: Is your feature request related to a problem?
- description: A clear description of what the problem or limitation is.
- placeholder: "I'm always frustrated when..."
- validations:
- required: true
+    id: problem
+    attributes:
+      label: Is your feature request related to a problem?
+      description: A clear description of what the problem or limitation is.
+      placeholder: "I'm always frustrated when..."
+    validations:
+      required: true
   - type: textarea
- id: solution
- attributes:
- label: Proposed Solution
- description: Describe the solution you'd like to see added to Skipper 360.
- validations:
- required: true
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like to see added to Skipper 360.
+    validations:
+      required: true
   - type: textarea
- id: alternatives
- attributes:
- label: Alternatives Considered
- description: Describe any alternative solutions or features you've considered.
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Describe any alternative solutions or features you've considered.
