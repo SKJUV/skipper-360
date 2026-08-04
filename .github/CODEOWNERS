@@ -1,0 +1,7 @@
+# Global code owners for Skipper 360
+* @SKJUV @marcwogue
+
+# Critical security modules
+/crates/skipper-core/src/keyring.rs @SKJUV @marcwogue
+/crates/skipperd/src/injector.rs @SKJUV @marcwogue
+SECURITY.md @SKJUV @marcwogue
