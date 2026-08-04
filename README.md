@@ -1,6 +1,6 @@
 <div align="center">
 
-  <h1> Skipper 360</h1>
+  <h1>Skipper 360</h1>
 
   <p><strong>Gardien d'arrière-plan intelligent et sécurisé pour l'injection automatique de mots de passe dans les PTY Linux.</strong></p>
 
@@ -16,7 +16,7 @@
     <a href="#-fonctionnalités">Fonctionnalités</a> •
     <a href="#-architecture">Architecture</a> •
     <a href="#-installation">Installation</a> •
-    <a href="#-guide-dutilisation">Utilisation</a> •
+    <a href="#dutilisation">Utilisation</a> •
     <a href="#-sécurité">Sécurité</a> •
     <a href="CONTRIBUTING.md">Contribution</a>
   </p>
