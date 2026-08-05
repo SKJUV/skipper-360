@@ -1,7 +1,7 @@
 use crate::pty::manager::PtyManager;
 use crate::pty::session::PtySession;
 use crate::state::SharedState;
-use skipper_core::{ConfigManager, OperatingMode, Request, Response, SkipperStatus};
+use skipper_core::{ConfigManager, MatchMode, OperatingMode, Request, Response, SkipperStatus};
 
 pub async fn handle_request(req: Request, state: SharedState) -> Response {
     match req.command.as_str() {
@@ -49,6 +49,80 @@ pub async fn handle_request(req: Request, state: SharedState) -> Response {
             }
 
             Response::ok(format!("Mode changé vers {}", mode), None, req.request_id)
+        }
+        "reload_config" => {
+            if let Ok(manager) = ConfigManager::new() {
+                if let Ok(new_config) = manager.load() {
+                    let mut state_guard = state.write().await;
+                    state_guard.config = new_config;
+                    tracing::info!("Configuration du daemon rechargée avec succès.");
+                    return Response::ok("Configuration rechargée", None, req.request_id);
+                }
+            }
+            Response::error("Échec du rechargement de la configuration", req.request_id)
+        }
+        "whitelist_add" => {
+            let cmd = req
+                .args
+                .get("command")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+            let mode_str = req
+                .args
+                .get("match_mode")
+                .and_then(|v| v.as_str())
+                .unwrap_or("prefix");
+            let match_mode = match mode_str {
+                "exact" => MatchMode::Exact,
+                _ => MatchMode::Prefix,
+            };
+
+            if cmd.is_empty() {
+                return Response::error("Commande whitelist vide", req.request_id);
+            }
+
+            let mut state_guard = state.write().await;
+            state_guard.config.add_whitelist_entry(cmd, match_mode);
+
+            if let Ok(manager) = ConfigManager::new() {
+                let _ = manager.save(&state_guard.config);
+            }
+
+            Response::ok(
+                format!("Commande '{}' ajoutée à la whitelist", cmd),
+                None,
+                req.request_id,
+            )
+        }
+        "whitelist_delete" => {
+            let cmd = req
+                .args
+                .get("command")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+
+            if cmd.is_empty() {
+                return Response::error("Commande whitelist vide", req.request_id);
+            }
+
+            let mut state_guard = state.write().await;
+            let removed = state_guard.config.remove_whitelist_entry(cmd);
+
+            if removed {
+                if let Ok(manager) = ConfigManager::new() {
+                    let _ = manager.save(&state_guard.config);
+                }
+                Response::ok(
+                    format!("Commande '{}' supprimée de la whitelist", cmd),
+                    None,
+                    req.request_id,
+                )
+            } else {
+                Response::error(
+                    format!("Commande '{}' introuvable dans la whitelist", cmd),
+                    req.request_id,
+                )
+            }
         }
         "run" => {
             let command_args = req

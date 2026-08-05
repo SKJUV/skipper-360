@@ -1,5 +1,5 @@
 use crate::errors::{Result, SkipperError};
-use crate::types::{OperatingMode, WhitelistEntry};
+use crate::types::{MatchMode, OperatingMode, WhitelistEntry};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -55,6 +55,35 @@ pub struct Config {
     pub whitelist: WhitelistConfig,
     #[serde(default)]
     pub patterns: PatternsConfig,
+}
+
+impl Config {
+    pub fn generate_keyring_key(command: &str) -> String {
+        let slug: String = command
+            .chars()
+            .map(|c| if c.is_alphanumeric() { c } else { '_' })
+            .collect();
+        format!("whitelist:{}", slug)
+    }
+
+    pub fn add_whitelist_entry(&mut self, command: &str, match_mode: MatchMode) -> String {
+        let keyring_key = Self::generate_keyring_key(command);
+        self.remove_whitelist_entry(command); // Overwrite if existing
+
+        self.whitelist.entries.push(WhitelistEntry {
+            command: command.to_string(),
+            keyring_key: keyring_key.clone(),
+            match_mode,
+        });
+
+        keyring_key
+    }
+
+    pub fn remove_whitelist_entry(&mut self, command: &str) -> bool {
+        let original_len = self.whitelist.entries.len();
+        self.whitelist.entries.retain(|e| e.command != command);
+        self.whitelist.entries.len() < original_len
+    }
 }
 
 pub struct ConfigManager {
@@ -167,5 +196,17 @@ mod tests {
         );
 
         let _ = fs::remove_dir_all(temp_dir);
+    }
+
+    #[test]
+    fn test_whitelist_helpers() {
+        let mut cfg = Config::default();
+        let key = cfg.add_whitelist_entry("ssh user@srv", MatchMode::Prefix);
+        assert!(key.contains("whitelist:ssh_user_srv"));
+        assert_eq!(cfg.whitelist.entries.len(), 1);
+
+        let removed = cfg.remove_whitelist_entry("ssh user@srv");
+        assert!(removed);
+        assert_eq!(cfg.whitelist.entries.len(), 0);
     }
 }

@@ -14,6 +14,8 @@ path = "src/main.rs"
 skipper-core = { path = "../skipper-core" }
 tokio = { workspace = true }
 clap = { workspace = true }
+clap_complete = { workspace = true }
+comfy-table = { workspace = true }
 dialoguer = { workspace = true }
 owo-colors = { workspace = true }
 indicatif = { workspace = true }
@@ -21,4 +23,5 @@ secrecy = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 dirs = { workspace = true }
+nix = { workspace = true }
 anyhow = { workspace = true }

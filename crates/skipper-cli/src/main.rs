@@ -2,7 +2,7 @@ mod commands;
 mod ipc;
 
 use anyhow::Result;
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
 use ipc::IpcClient;
 use owo_colors::OwoColorize;
 use skipper_core::Request;
@@ -46,6 +46,14 @@ enum Commands {
         #[arg(trailing_var_arg = true)]
         command: Vec<String>,
     },
+    /// Générer les scripts d'auto-complétion pour votre shell (bash, zsh, fish)
+    Completion {
+        /// Nom du shell (bash, zsh, fish)
+        #[arg(value_name = "SHELL")]
+        shell: String,
+    },
+    /// Diagnostic de santé de l'installation système
+    Doctor,
     /// Réinitialiser toute la configuration et le trousseau
     Reset,
 }
@@ -54,16 +62,25 @@ enum Commands {
 enum WhitelistAction {
     /// Ajouter une commande à la whitelist
     Add {
+        /// Mode de correspondance ("prefix" ou "exact")
+        #[arg(short, long, value_name = "MODE")]
+        mode: Option<String>,
+        /// La commande à surveiller
         #[arg(trailing_var_arg = true)]
         command: Vec<String>,
     },
     /// Supprimer une commande de la whitelist
     Delete {
+        /// La commande à supprimer
         #[arg(trailing_var_arg = true)]
         command: Vec<String>,
     },
     /// Lister les commandes de la whitelist
-    List,
+    List {
+        /// Afficher les mots de passe en clair (nécessite sudo)
+        #[arg(short, long)]
+        show: bool,
+    },
 }
 
 #[tokio::main]
@@ -73,6 +90,11 @@ async fn main() -> Result<()> {
     match cli.command {
         Commands::Init => commands::init::run()?,
         Commands::Status => commands::status::run().await?,
+        Commands::Doctor => commands::doctor::run()?,
+        Commands::Completion { shell } => {
+            let mut cmd = Cli::command();
+            commands::completion::generate_completion(&shell, &mut cmd)?;
+        }
         Commands::Activate => {
             let client = IpcClient::new()?;
             if let Err(e) = client.ensure_daemon_running().await {
@@ -109,20 +131,17 @@ async fn main() -> Result<()> {
             }
         }
         Commands::Whitelist { action } => match action {
-            Some(WhitelistAction::Add { command }) => {
-                println!(
-                    "{}",
-                    format!("➕ Ajout à la whitelist: {}", command.join(" ")).green()
-                );
+            Some(WhitelistAction::Add { command, mode }) => {
+                commands::whitelist::add(&command, mode).await?;
             }
             Some(WhitelistAction::Delete { command }) => {
-                println!(
-                    "{}",
-                    format!("➖ Suppression de la whitelist: {}", command.join(" ")).yellow()
-                );
+                commands::whitelist::delete(&command).await?;
             }
-            Some(WhitelistAction::List) | None => {
-                commands::status::run().await?;
+            Some(WhitelistAction::List { show }) => {
+                commands::whitelist::list(show)?;
+            }
+            None => {
+                commands::whitelist::list(false)?;
             }
         },
         Commands::Run { command } => {
