@@ -8,12 +8,15 @@ pub fn run() -> Result<()> {
     println!("{}", "🛡️  Skipper 360 — Initialisation".bold().blue());
     println!("{}", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".dimmed());
 
+    let default_user = std::env::var("USER").unwrap_or_else(|_| "user".to_string());
+
     let username: String = Input::new()
         .with_prompt("👤 Nom d'utilisateur")
+        .default(default_user)
         .interact_text()?;
 
     let password = Password::new()
-        .with_prompt("🔒 Mot de passe par défaut")
+        .with_prompt("🔒 Mot de passe par défaut (ex: votre mot de passe sudo)")
         .with_confirmation(
             "🔒 Confirmez le mot de passe",
             "Les mots de passe ne correspondent pas",
