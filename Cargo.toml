@@ -4,6 +4,7 @@ members = [
     "crates/skipper-cli",
     "crates/skipperd",
     "crates/skipper-core",
+    "crates/skipper-preload",
 ]
 
 [workspace.dependencies]

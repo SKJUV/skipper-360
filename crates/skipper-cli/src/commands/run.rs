@@ -16,7 +16,7 @@ pub async fn run(command: &[String]) -> Result<()> {
     println!(
         "{}",
         format!(
-            "🚀 Skipper 360 — Exécution surveillée : {}",
+            " Skipper 360 — Exécution surveillée : {}",
             command.join(" ")
         )
         .bold()

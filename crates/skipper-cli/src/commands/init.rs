@@ -13,9 +13,9 @@ pub fn run() -> Result<()> {
         .interact_text()?;
 
     let password = Password::new()
-        .with_prompt("🔒 Mot de passe par défaut")
+        .with_prompt(" Mot de passe par défaut")
         .with_confirmation(
-            "🔒 Confirmez le mot de passe",
+            " Confirmez le mot de passe",
             "Les mots de passe ne correspondent pas",
         )
         .interact()?;

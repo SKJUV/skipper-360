@@ -25,7 +25,7 @@ impl IpcClient {
             return Ok(());
         }
 
-        println!("⚙️  Démarrage automatique du daemon skipperd en arrière-plan...");
+        println!("  Démarrage automatique du daemon skipperd en arrière-plan...");
 
         let spawn_res = std::process::Command::new("skipperd")
             .stdin(std::process::Stdio::null())

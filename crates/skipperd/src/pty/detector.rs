@@ -36,7 +36,7 @@ mod tests {
     #[test]
     fn test_prompt_detection() {
         let detector = PromptDetector::new(&[]);
-        assert!(detector.detect("[sudo] password for skjuve:").is_some());
+        assert!(detector.detect("[sudo] password for the user:").is_some());
         assert!(detector.detect("Mot de passe :").is_some());
         assert!(detector.detect("user@server's password:").is_some());
         assert!(detector

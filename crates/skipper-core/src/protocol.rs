@@ -10,7 +10,7 @@ pub struct Request {
 impl Request {
     pub fn new(command: impl Into<String>, args: serde_json::Value) -> Self {
         Self {
-            command: command.into(),
+            command: command.into().trim().to_string(),
             args,
             request_id: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)

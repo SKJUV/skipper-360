@@ -46,6 +46,8 @@ enum Commands {
         #[arg(trailing_var_arg = true)]
         command: Vec<String>,
     },
+    /// Diagnostic de santé de l'installation et des dépendances
+    Doctor,
     /// Réinitialiser toute la configuration et le trousseau
     Reset,
 }
@@ -73,6 +75,7 @@ async fn main() -> Result<()> {
     match cli.command {
         Commands::Init => commands::init::run()?,
         Commands::Status => commands::status::run().await?,
+        Commands::Doctor => commands::doctor::run().await?,
         Commands::Activate => {
             let client = IpcClient::new()?;
             if let Err(e) = client.ensure_daemon_running().await {
