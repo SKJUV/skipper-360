@@ -48,6 +48,8 @@ enum Commands {
     },
     /// Diagnostic de santé de l'installation et des dépendances
     Doctor,
+    /// Afficher les journaux d'interception et d'injection
+    Log,
     /// Réinitialiser toute la configuration et le trousseau
     Reset,
 }
@@ -76,6 +78,7 @@ async fn main() -> Result<()> {
         Commands::Init => commands::init::run()?,
         Commands::Status => commands::status::run().await?,
         Commands::Doctor => commands::doctor::run().await?,
+        Commands::Log => commands::log::run()?,
         Commands::Activate => {
             let client = IpcClient::new()?;
             if let Err(e) = client.ensure_daemon_running().await {
@@ -113,16 +116,10 @@ async fn main() -> Result<()> {
         }
         Commands::Whitelist { action } => match action {
             Some(WhitelistAction::Add { command }) => {
-                println!(
-                    "{}",
-                    format!("➕ Ajout à la whitelist: {}", command.join(" ")).green()
-                );
+                commands::whitelist::add(&command)?;
             }
             Some(WhitelistAction::Delete { command }) => {
-                println!(
-                    "{}",
-                    format!("➖ Suppression de la whitelist: {}", command.join(" ")).yellow()
-                );
+                commands::whitelist::delete(&command)?;
             }
             Some(WhitelistAction::List) | None => {
                 commands::status::run().await?;

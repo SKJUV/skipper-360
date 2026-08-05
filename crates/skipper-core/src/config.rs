@@ -15,7 +15,7 @@ pub struct GeneralConfig {
 }
 
 fn default_timeout() -> u32 {
-    30
+    10
 }
 
 impl Default for GeneralConfig {

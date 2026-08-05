@@ -71,6 +71,38 @@ async fn main() -> Result<()> {
     let state = create_shared_state();
     let server = IpcServer::new(state.clone())?;
 
+    // Config File Watcher avec notify (Rechargement dynamique à chaud)
+    let state_for_watcher = state.clone();
+    tokio::spawn(async move {
+        use notify::{Watcher, RecursiveMode, Event};
+        if let Ok(cm) = skipper_core::ConfigManager::new() {
+            let config_path = cm.config_path().clone();
+            let (tx, mut rx) = tokio::sync::mpsc::channel::<()>(10);
+            
+            let mut watcher = notify::recommended_watcher(move |res: Result<Event, notify::Error>| {
+                if let Ok(event) = res {
+                    if event.kind.is_modify() || event.kind.is_create() {
+                        let _ = tx.blocking_send(());
+                    }
+                }
+            });
+
+            if let Ok(ref mut w) = watcher {
+                if let Some(parent) = config_path.parent() {
+                    let _ = w.watch(parent, RecursiveMode::NonRecursive);
+                }
+            }
+
+            while rx.recv().await.is_some() {
+                if let Ok(updated_config) = cm.load() {
+                    let mut guard = state_for_watcher.write().await;
+                    guard.config = updated_config;
+                    tracing::info!("🔄 Configuration rechargée dynamiquement à chaud !");
+                }
+            }
+        }
+    });
+
     let (shutdown_tx, shutdown_rx) = tokio::sync::broadcast::channel(1);
 
     // Listen for graceful shutdown signals (SIGINT / SIGTERM)

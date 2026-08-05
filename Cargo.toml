@@ -41,6 +41,9 @@ regex = "1.10"
 thiserror = "2.0"
 anyhow = "1.0"
 
+# File Watching
+notify = "6.1"
+
 # Logging & Tracing
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }

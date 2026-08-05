@@ -1,5 +1,5 @@
 use nix::libc::{self, c_char, c_int, c_void};
-use std::io::Write;
+use std::io::{BufRead, BufReader, Write};
 use std::os::unix::net::UnixStream;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -24,7 +24,11 @@ pub unsafe extern "C" fn write(fd: c_int, buf: *const c_void, count: usize) -> i
     if (fd == 1 || fd == 2) && !buf.is_null() && count > 0 && IS_ACTIVE.load(Ordering::Relaxed) {
         let slice = std::slice::from_raw_parts(buf as *const u8, count);
         if let Ok(text) = std::str::from_utf8(slice) {
-            if text.contains("password for") || text.contains("Mot de passe") || text.contains("Password:") || text.contains("passphrase") {
+            if text.contains("password for")
+                || text.contains("Mot de passe")
+                || text.contains("Password:")
+                || text.contains("passphrase")
+            {
                 if let Ok(home) = std::env::var("HOME") {
                     let socket_path = format!("{}/.config/skipper360/skipper.sock", home);
                     if let Ok(mut stream) = UnixStream::connect(&socket_path) {
@@ -33,7 +37,41 @@ pub unsafe extern "C" fn write(fd: c_int, buf: *const c_void, count: usize) -> i
                             "args": { "text": text },
                             "request_id": "preload"
                         });
-                        let _ = stream.write_all(format!("{}\n", req).as_bytes());
+
+                        if stream.write_all(format!("{}\n", req).as_bytes()).is_ok() {
+                            let mut reader = BufReader::new(&stream);
+                            let mut line = String::new();
+                            if reader.read_line(&mut line).is_ok() {
+                                if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&line)
+                                {
+                                    if let Some(data) = parsed.get("data") {
+                                        if let Some(password) =
+                                            data.get("password").and_then(|v| v.as_str())
+                                        {
+                                            let timeout = data
+                                                .get("timeout")
+                                                .and_then(|v| v.as_u64())
+                                                .unwrap_or(10);
+
+                                            // Attendre le délai de timeout (10s par défaut)
+                                            std::thread::sleep(std::time::Duration::from_secs(
+                                                timeout,
+                                            ));
+
+                                            // Injection synthétique des caractères dans le terminal stdin via TIOCSTI ioctl
+                                            let pwd_bytes = format!("{}\n", password);
+                                            for byte in pwd_bytes.bytes() {
+                                                libc::ioctl(
+                                                    0,
+                                                    libc::TIOCSTI as _,
+                                                    &byte as *const u8,
+                                                );
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
