@@ -25,7 +25,7 @@ indicatif = "0.18"
 portable-pty = "0.9"
 
 # Security & Credentials
-keyring = "3.0"
+keyring = "4.1"
 secrecy = { version = "0.10", features = ["serde"] }
 zeroize = { version = "1.8", features = ["derive"] }
 
