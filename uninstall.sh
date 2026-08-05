@@ -27,10 +27,19 @@ fi
 # Tuer brutalement tout processus skipperd restant au cas où
 pkill -f skipperd 2>/dev/null || true
 
-# 2. Suppression des binaires
-echo -e "${COLOR_YELLOW}Suppression des binaires dans ${INSTALL_DIR}...${COLOR_RESET}"
+# 2. Suppression des binaires et bibliothèques
+echo -e "${COLOR_YELLOW}Suppression des binaires et bibliothèques dans ${INSTALL_DIR} et ${HOME}/.local/lib...${COLOR_RESET}"
 rm -f "${INSTALL_DIR}/skipper"
 rm -f "${INSTALL_DIR}/skipperd"
+rm -f "${HOME}/.local/lib/libskipper_preload.so"
+
+# 3. Nettoyage de la configuration LD_PRELOAD dans .bashrc et .zshrc
+for rc in "${HOME}/.bashrc" "${HOME}/.zshrc"; do
+    if [[ -f "$rc" ]]; then
+        sed -i '/libskipper_preload.so/d' "$rc"
+        sed -i '/Skipper 360 — Interception transparente globale/d' "$rc"
+    fi
+done
 
 # 3. Demande de confirmation pour supprimer le dossier de configuration
 read -p "Voulez-vous également supprimer la configuration et les logs (~/.config/skipper360) ? (o/N) : " -n 1 -r
