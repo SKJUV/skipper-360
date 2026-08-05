@@ -1,11 +1,13 @@
 use crate::handler::handle_request;
 use crate::state::SharedState;
-use skipper_core::{Request, Result, SkipperError};
+use skipper_core::{Request, Response, SkipperError, StreamMessage};
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
+use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixListener;
+use tokio::sync::Mutex;
 use tracing::{error, info};
 
 pub struct IpcServer {
@@ -14,7 +16,7 @@ pub struct IpcServer {
 }
 
 impl IpcServer {
-    pub fn new(state: SharedState) -> Result<Self> {
+    pub fn new(state: SharedState) -> skipper_core::Result<Self> {
         let base_dir = dirs::config_dir().ok_or_else(|| {
             SkipperError::Config("Impossible de localiser le répertoire config".into())
         })?;
@@ -27,7 +29,10 @@ impl IpcServer {
         Ok(Self { socket_path, state })
     }
 
-    pub async fn run(&self, mut shutdown: tokio::sync::broadcast::Receiver<()>) -> Result<()> {
+    pub async fn run(
+        &self,
+        mut shutdown: tokio::sync::broadcast::Receiver<()>,
+    ) -> skipper_core::Result<()> {
         if self.socket_path.exists() {
             let _ = fs::remove_file(&self.socket_path);
         }
@@ -52,8 +57,10 @@ impl IpcServer {
                         Ok((stream, _)) => {
                             let state = self.state.clone();
                             tokio::spawn(async move {
-                                let (reader, mut writer) = stream.into_split();
+                                let (reader, writer) = stream.into_split();
                                 let mut buf_reader = BufReader::new(reader);
+                                let writer_arc = Arc::new(Mutex::new(writer));
+
                                 let mut line = String::new();
 
                                 loop {
@@ -62,14 +69,30 @@ impl IpcServer {
                                         Ok(0) => break, // EOF
                                         Ok(_) => {
                                             if let Ok(req) = serde_json::from_str::<Request>(line.trim()) {
-                                                let response = handle_request(req, state.clone()).await;
+                                                let writer_for_stream = writer_arc.clone();
+                                                let on_stream = move |stream_msg: StreamMessage| {
+                                                    if let Ok(msg_json) = serde_json::to_string(&stream_msg) {
+                                                        let w = writer_for_stream.clone();
+                                                        tokio::spawn(async move {
+                                                            let mut lock = w.lock().await;
+                                                            let _ = lock.write_all(format!("{}\n", msg_json).as_bytes()).await;
+                                                            let _ = lock.flush().await;
+                                                        });
+                                                    }
+                                                };
+
+                                                let response = handle_request(req, state.clone(), on_stream).await;
                                                 if let Ok(resp_json) = serde_json::to_string(&response) {
-                                                    let _ = writer.write_all(format!("{}\n", resp_json).as_bytes()).await;
+                                                    let mut lock = writer_arc.lock().await;
+                                                    let _ = lock.write_all(format!("{}\n", resp_json).as_bytes()).await;
+                                                    let _ = lock.flush().await;
                                                 }
                                             } else {
-                                                let err_resp = skipper_core::Response::error("Requête JSON invalide", "0");
+                                                let err_resp = Response::error("Requête JSON invalide", "0");
                                                 if let Ok(resp_json) = serde_json::to_string(&err_resp) {
-                                                    let _ = writer.write_all(format!("{}\n", resp_json).as_bytes()).await;
+                                                    let mut lock = writer_arc.lock().await;
+                                                    let _ = lock.write_all(format!("{}\n", resp_json).as_bytes()).await;
+                                                    let _ = lock.flush().await;
                                                 }
                                             }
                                         }

@@ -1,9 +1,15 @@
 use crate::pty::manager::PtyManager;
 use crate::pty::session::PtySession;
 use crate::state::SharedState;
-use skipper_core::{ConfigManager, MatchMode, OperatingMode, Request, Response, SkipperStatus};
+use skipper_core::{
+    ConfigManager, MatchMode, OperatingMode, Request, Response, SkipperStatus, StreamMessage,
+};
+use std::sync::Arc;
 
-pub async fn handle_request(req: Request, state: SharedState) -> Response {
+pub async fn handle_request<F>(req: Request, state: SharedState, on_stream: F) -> Response
+where
+    F: Fn(StreamMessage) + Send + Sync + 'static,
+{
     match req.command.as_str() {
         "ping" => Response::ok("pong", None, req.request_id),
         "activate" => {
@@ -145,9 +151,12 @@ pub async fn handle_request(req: Request, state: SharedState) -> Response {
 
             PtyManager::increment_active_sessions(&state).await;
 
+            let on_stream = Arc::new(on_stream);
+            let on_stream_clone = on_stream.clone();
+
             let result = tokio::task::spawn_blocking(move || {
-                PtySession::run_and_stream(&command_args, &config, |_chunk| {
-                    // Output streamed directly via PTY master to child terminal
+                PtySession::run_and_stream(&command_args, &config, move |chunk| {
+                    on_stream_clone(StreamMessage::Stdout(chunk.to_string()));
                 })
             })
             .await;
