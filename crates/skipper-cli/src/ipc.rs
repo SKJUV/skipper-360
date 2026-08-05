@@ -16,12 +16,24 @@ impl IpcClient {
         Ok(Self { socket_path })
     }
 
-    pub fn is_daemon_running(&self) -> bool {
-        self.socket_path.exists()
+    pub async fn is_daemon_running(&self) -> bool {
+        if !self.socket_path.exists() {
+            return false;
+        }
+
+        // Check if daemon is actively responding on socket
+        match UnixStream::connect(&self.socket_path).await {
+            Ok(_) => true,
+            Err(_) => {
+                // Stale socket file detected, clean it up
+                let _ = std::fs::remove_file(&self.socket_path);
+                false
+            }
+        }
     }
 
     pub async fn ensure_daemon_running(&self) -> Result<()> {
-        if self.is_daemon_running() {
+        if self.is_daemon_running().await {
             return Ok(());
         }
 
@@ -38,7 +50,7 @@ impl IpcClient {
                 // Wait up to 1.5 seconds for socket file to be created by daemon
                 for _ in 0..15 {
                     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-                    if self.is_daemon_running() {
+                    if self.is_daemon_running().await {
                         return Ok(());
                     }
                 }
