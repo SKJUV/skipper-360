@@ -1,14 +1,16 @@
 use crate::handler::handle_request;
 use crate::state::SharedState;
-use skipper_core::{Request, Response, SkipperError, StreamMessage};
+use skipper_core::{apply_kernel_hardened_prctl, Request, Response, SkipperError, StreamMessage};
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixListener;
 use tokio::sync::Mutex;
 use tracing::{error, info};
+
+const MAX_IPC_REQUEST_BYTES: u64 = 65_536; // 64 KiB max request size to prevent DoS
 
 pub struct IpcServer {
     socket_path: PathBuf,
@@ -33,6 +35,8 @@ impl IpcServer {
         &self,
         mut shutdown: tokio::sync::broadcast::Receiver<()>,
     ) -> skipper_core::Result<()> {
+        apply_kernel_hardened_prctl();
+
         if self.socket_path.exists() {
             let _ = fs::remove_file(&self.socket_path);
         }
@@ -58,14 +62,14 @@ impl IpcServer {
                             let state = self.state.clone();
                             tokio::spawn(async move {
                                 let (reader, writer) = stream.into_split();
-                                let mut buf_reader = BufReader::new(reader);
+                                let mut line_reader = BufReader::new(reader).take(MAX_IPC_REQUEST_BYTES);
                                 let writer_arc = Arc::new(Mutex::new(writer));
 
                                 let mut line = String::new();
 
                                 loop {
                                     line.clear();
-                                    match buf_reader.read_line(&mut line).await {
+                                    match line_reader.read_line(&mut line).await {
                                         Ok(0) => break, // EOF
                                         Ok(_) => {
                                             if let Ok(req) = serde_json::from_str::<Request>(line.trim()) {
@@ -88,7 +92,7 @@ impl IpcServer {
                                                     let _ = lock.flush().await;
                                                 }
                                             } else {
-                                                let err_resp = Response::error("Requête JSON invalide", "0");
+                                                let err_resp = Response::error("Requête JSON invalide ou trop volumineuse", "0");
                                                 if let Ok(resp_json) = serde_json::to_string(&err_resp) {
                                                     let mut lock = writer_arc.lock().await;
                                                     let _ = lock.write_all(format!("{}\n", resp_json).as_bytes()).await;

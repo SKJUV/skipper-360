@@ -3,7 +3,7 @@ name = "skipper-core"
 version = "0.1.0"
 edition = "2021"
 authors = ["Skipper 360 Contributors"]
-description = "Core library for Skipper 360 - types, IPC protocol, config, and keyring security."
+description = "Core library for Skipper 360 - types, protocol, keyring, patterns, and configuration."
 license = "MIT OR Apache-2.0"
 
 [dependencies]
@@ -13,8 +13,8 @@ toml = { workspace = true }
 keyring = { workspace = true }
 secrecy = { workspace = true }
 zeroize = { workspace = true }
-dirs = { workspace = true }
 regex = { workspace = true }
 thiserror = { workspace = true }
-anyhow = { workspace = true }
+dirs = { workspace = true }
+nix = { workspace = true }
 tracing = { workspace = true }

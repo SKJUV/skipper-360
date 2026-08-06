@@ -1,5 +1,5 @@
-use secrecy::{ExposeSecret, SecretString};
-use skipper_core::{Config, KeyringManager, MatchMode, Result};
+use secrecy::SecretString;
+use skipper_core::{AlignedSecretBuffer, Config, KeyringManager, MatchMode, Result};
 
 pub struct PasswordInjector;
 
@@ -29,9 +29,7 @@ impl PasswordInjector {
         KeyringManager::get_default_password()
     }
 
-    pub fn format_injection_bytes(password: &SecretString) -> Vec<u8> {
-        let mut bytes = password.expose_secret().as_bytes().to_vec();
-        bytes.push(b'\n');
-        bytes
+    pub fn format_aligned_buffer(password: &SecretString) -> AlignedSecretBuffer {
+        AlignedSecretBuffer::from_secret(password)
     }
 }

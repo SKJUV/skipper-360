@@ -1,11 +1,13 @@
 use crate::injector::PasswordInjector;
 use crate::pty::detector::PromptDetector;
 use portable_pty::{native_pty_system, CommandBuilder, PtySize};
-use skipper_core::{Config, Result, SkipperError};
+use skipper_core::{
+    apply_kernel_hardened_prctl, flush_cache_line, speculation_barrier, Config, Result,
+    SkipperError,
+};
 use std::io::{Read, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use zeroize::Zeroize;
 
 pub struct PtySession;
 
@@ -17,6 +19,8 @@ impl PtySession {
         if command.is_empty() {
             return Err(SkipperError::Pty("Commande vide fournie".into()));
         }
+
+        apply_kernel_hardened_prctl();
 
         let pty_system = native_pty_system();
         let pair = pty_system
@@ -87,13 +91,21 @@ impl PtySession {
                             if let Ok(password) =
                                 PasswordInjector::resolve_password(&full_command_str, &config_clone)
                             {
-                                let mut bytes = PasswordInjector::format_injection_bytes(&password);
-                                if writer.write_all(&bytes).is_ok() {
+                                let aligned_buf =
+                                    PasswordInjector::format_aligned_buffer(&password);
+                                speculation_barrier();
+
+                                if writer
+                                    .write_all(&aligned_buf.data[..aligned_buf.len])
+                                    .is_ok()
+                                {
                                     let _ = writer.flush();
                                     injected.store(true, Ordering::SeqCst);
                                     tracing::info!("Mot de passe injecté avec succès dans le PTY.");
                                 }
-                                bytes.zeroize();
+
+                                flush_cache_line(aligned_buf.data.as_ptr(), aligned_buf.len);
+                                speculation_barrier();
                             }
                         }
                     }
