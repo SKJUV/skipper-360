@@ -10,12 +10,14 @@ permissions:
 
 jobs:
   build-release:
-    name: Build and Publish Release Assets
+    name: Build and Publish Release Assets (${{ matrix.target }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
         target:
           - x86_64-unknown-linux-gnu
+          - x86_64-unknown-linux-musl
+          - aarch64-unknown-linux-gnu
 
     steps:
       - name: Checkout Repository
@@ -29,14 +31,18 @@ jobs:
       - name: Rust Cache Setup
         uses: Swatinem/rust-cache@v2
 
-      - name: Install Build Dependencies
+      - name: Install Build Dependencies & Cross-compilers
         run: |
           sudo apt-get update
-          sudo apt-get install -y libsecret-1-dev pkg-config
+          sudo apt-get install -y libsecret-1-dev pkg-config musl-tools gcc-aarch64-linux-gnu
 
       - name: Build Release Binaries
         run: |
-          cargo build --release --target ${{ matrix.target }}
+          if [ "${{ matrix.target }}" = "aarch64-unknown-linux-gnu" ]; then
+            CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc cargo build --release --target ${{ matrix.target }}
+          else
+            cargo build --release --target ${{ matrix.target }}
+          fi
 
       - name: Package Release Assets (.tar.gz & .sha256)
         run: |

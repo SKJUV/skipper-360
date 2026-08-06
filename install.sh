@@ -11,6 +11,10 @@ RESET="\033[0m"
 echo -e "${BOLD}${BLUE}🛡️  Skipper 360 — Déploiement & Installation Automatisée${RESET}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 
+ARCH=$(uname -m)
+OS=$(uname -s)
+echo -e "🖥️  ${BOLD}Architecture système détectée :${RESET} ${CYAN}${ARCH} (${OS})${RESET}"
+
 # 1. Compilation des binaires release
 echo -e "🔨 ${BOLD}Compilation optimisée des binaires release...${RESET}"
 cargo build --release
