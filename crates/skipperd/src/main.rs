@@ -18,7 +18,7 @@ use tracing::info;
 #[tokio::main]
 async fn main() -> Result<()> {
     // 1. Setup rolling log appender to ~/.config/skipper360/logs/skipper.log
-    if let Some(config_dir) = dirs::config_dir() {
+    let _log_guard = if let Some(config_dir) = dirs::config_dir() {
         let log_dir = config_dir.join("skipper360").join("logs");
         let _ = std::fs::create_dir_all(&log_dir);
 
@@ -26,7 +26,7 @@ async fn main() -> Result<()> {
         let _ = std::fs::set_permissions(&log_dir, std::fs::Permissions::from_mode(0o700));
 
         let file_appender = tracing_appender::rolling::daily(&log_dir, "skipper.log");
-        let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+        let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
 
         tracing_subscriber::fmt()
             .with_writer(non_blocking)
@@ -35,9 +35,11 @@ async fn main() -> Result<()> {
                     .add_directive(tracing::Level::INFO.into()),
             )
             .init();
+        Some(guard)
     } else {
         tracing_subscriber::fmt::init();
-    }
+        None
+    };
 
     info!("Démarrage du Daemon Skipper 360 (skipperd)...");
 
@@ -77,14 +79,13 @@ async fn main() -> Result<()> {
             let config_path = cm.config_path().clone();
             let (tx, mut rx) = tokio::sync::mpsc::channel::<()>(10);
 
-            let mut watcher =
-                notify::recommended_watcher(move |res: Result<Event, notify::Error>| {
-                    if let Ok(event) = res {
-                        if event.kind.is_modify() || event.kind.is_create() {
-                            let _ = tx.blocking_send(());
-                        }
+            let mut watcher = notify::recommended_watcher(move |res: Result<Event, notify::Error>| {
+                if let Ok(event) = res {
+                    if event.kind.is_modify() || event.kind.is_create() {
+                        let _ = tx.blocking_send(());
                     }
-                });
+                }
+            });
 
             if let Ok(ref mut w) = watcher {
                 if let Some(parent) = config_path.parent() {
