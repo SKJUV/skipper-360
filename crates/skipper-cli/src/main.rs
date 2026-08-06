@@ -56,8 +56,20 @@ enum Commands {
     },
     /// Diagnostic de santé de l'installation système
     Doctor,
+    /// Configurer la durée du timeout intelligent (en secondes)
+    Timeout {
+        /// Nombre de secondes avant injection (ex: 5, 10, 30)
+        #[arg(value_name = "SECONDS")]
+        seconds: u32,
+    },
     /// Réinitialiser toute la configuration et le trousseau
     Reset,
+    /// Vérifier si une commande match la whitelist (renvoie code 0 si oui, 1 si non)
+    #[command(hide = true)]
+    CheckWhitelist {
+        #[arg(trailing_var_arg = true)]
+        command: Vec<String>,
+    },
 }
 
 #[derive(Subcommand)]
@@ -153,6 +165,9 @@ async fn main() -> Result<()> {
         Commands::Run { command } => {
             commands::run::run(&command).await?;
         }
+        Commands::Timeout { seconds } => {
+            commands::timeout::run(seconds).await?;
+        }
         Commands::Reset => {
             if let Ok(manager) = skipper_core::ConfigManager::new() {
                 let _ = std::fs::remove_file(manager.config_path());
@@ -163,6 +178,12 @@ async fn main() -> Result<()> {
                 "[WARN] {}",
                 "Réinitialisation de la configuration effectuée.".yellow()
             );
+        }
+        Commands::CheckWhitelist { command } => {
+            match commands::check_whitelist::check(&command) {
+                Ok(true) => std::process::exit(0),
+                _ => std::process::exit(1),
+            }
         }
     }
 

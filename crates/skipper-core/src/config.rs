@@ -52,6 +52,23 @@ pub struct PatternsConfig {
     pub custom_patterns: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KeywordsConfig {
+    #[serde(default = "crate::patterns::get_default_simple_keywords")]
+    pub simple_keywords: Vec<String>,
+    #[serde(default = "crate::patterns::get_default_combined_keywords")]
+    pub combined_keywords: Vec<Vec<String>>,
+}
+
+impl Default for KeywordsConfig {
+    fn default() -> Self {
+        Self {
+            simple_keywords: crate::patterns::get_default_simple_keywords(),
+            combined_keywords: crate::patterns::get_default_combined_keywords(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {
     #[serde(default)]
@@ -62,6 +79,8 @@ pub struct Config {
     pub whitelist: WhitelistConfig,
     #[serde(default)]
     pub patterns: PatternsConfig,
+    #[serde(default)]
+    pub keywords: KeywordsConfig,
 }
 
 impl Config {

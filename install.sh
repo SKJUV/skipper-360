@@ -8,7 +8,7 @@ YELLOW="\033[33m"
 CYAN="\033[36m"
 RESET="\033[0m"
 
-echo -e "${BOLD}🛡️ Skipper 360 — Déploiement & Installation Automatisée${RESET}"
+echo -e "${BOLD} Skipper 360 — Déploiement & Installation Automatisée${RESET}"
 echo -e "${CYAN}──────────────────────────────────────────────────${RESET}"
 
 ARCH=$(uname -m)

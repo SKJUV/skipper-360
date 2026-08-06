@@ -34,8 +34,20 @@ pub fn run() -> Result<()> {
 
     for entry in entries.iter().rev().take(50) {
         let action_cell = match entry.action {
+            skipper_core::AuditAction::CommandExecuted => {
+                Cell::new("CommandExecuted").fg(Color::Blue)
+            }
+            skipper_core::AuditAction::WhitelistMatched => {
+                Cell::new("WhitelistMatched").fg(Color::Magenta)
+            }
+            skipper_core::AuditAction::TimeoutElapsed => {
+                Cell::new("TimeoutElapsed").fg(Color::Yellow)
+            }
             skipper_core::AuditAction::PasswordInjected => {
                 Cell::new("PasswordInjected").fg(Color::Green)
+            }
+            skipper_core::AuditAction::PasswordInjectionFailed => {
+                Cell::new("InjectionFailed").fg(Color::Red)
             }
             skipper_core::AuditAction::PromptDetected => {
                 Cell::new("PromptDetected").fg(Color::Yellow)

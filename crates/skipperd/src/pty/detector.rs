@@ -1,30 +1,40 @@
-use regex::RegexSet;
-use skipper_core::patterns::DEFAULT_PATTERNS;
+use skipper_core::KeywordsConfig;
 
 pub struct PromptDetector {
-    regex_set: RegexSet,
-    patterns: Vec<String>,
+    simple_keywords: Vec<String>,
+    combined_keywords: Vec<Vec<String>>,
 }
 
 impl PromptDetector {
-    pub fn new(custom_patterns: &[String]) -> Self {
-        let mut patterns: Vec<String> = DEFAULT_PATTERNS.iter().map(|s| s.to_string()).collect();
-        patterns.extend(custom_patterns.iter().cloned());
-
-        let regex_set =
-            RegexSet::new(&patterns).expect("Failed to compile prompt detection RegexSet");
-
+    pub fn new(keywords_config: &KeywordsConfig) -> Self {
         Self {
-            regex_set,
-            patterns,
+            simple_keywords: keywords_config.simple_keywords.clone(),
+            combined_keywords: keywords_config.combined_keywords.clone(),
         }
     }
 
     pub fn detect(&self, text: &str) -> Option<String> {
-        let matches = self.regex_set.matches(text);
-        if let Some(index) = matches.into_iter().next() {
-            return self.patterns.get(index).cloned();
+        let text_lower = text.to_lowercase();
+
+        // 1. Recherche par mots-clés simples (contient le mot-clé)
+        for kw in &self.simple_keywords {
+            let kw_lower = kw.to_lowercase();
+            if text_lower.contains(&kw_lower) {
+                return Some(format!("Mot-clé détecté : '{}'", kw));
+            }
         }
+
+        // 2. Recherche par combinaisons de mots-clés (contient TOUS les mots-clés)
+        for combo in &self.combined_keywords {
+            if !combo.is_empty()
+                && combo
+                    .iter()
+                    .all(|kw| text_lower.contains(&kw.to_lowercase()))
+            {
+                return Some(format!("Combinaison de mots-clés détectée : {:?}", combo));
+            }
+        }
+
         None
     }
 }
@@ -34,8 +44,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_prompt_detection() {
-        let detector = PromptDetector::new(&[]);
+    fn test_keyword_prompt_detection() {
+        let keywords_config = KeywordsConfig::default();
+        let detector = PromptDetector::new(&keywords_config);
+
         assert!(detector.detect("[sudo] password for skjuve:").is_some());
         assert!(detector.detect("Mot de passe :").is_some());
         assert!(detector.detect("user@server's password:").is_some());
