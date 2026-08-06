@@ -6,12 +6,14 @@ fn test_whitelist_entry_matching() {
         command: "sudo pacman -Syu".to_string(),
         keyring_key: "whitelist:sudo_pacman_-Syu".to_string(),
         match_mode: MatchMode::Exact,
+        expires_at: None,
     };
 
     let prefix_entry = WhitelistEntry {
         command: "ssh user@serveur-prod".to_string(),
         keyring_key: "whitelist:ssh_user_prod".to_string(),
         match_mode: MatchMode::Prefix,
+        expires_at: None,
     };
 
     assert_eq!(exact_entry.match_mode, MatchMode::Exact);

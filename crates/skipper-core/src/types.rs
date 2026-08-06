@@ -1,16 +1,14 @@
 use serde::{Deserialize, Serialize};
-use std::fmt;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
-#[serde(rename_all = "snake_case")]
 pub enum OperatingMode {
     #[default]
     Standard,
     Silent,
 }
 
-impl fmt::Display for OperatingMode {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl std::fmt::Display for OperatingMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             OperatingMode::Standard => write!(f, "Standard"),
             OperatingMode::Silent => write!(f, "Silent"),
@@ -18,34 +16,46 @@ impl fmt::Display for OperatingMode {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum SkipperStatus {
-    Active,
+    #[default]
     Inactive,
+    Active,
 }
 
-impl fmt::Display for SkipperStatus {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl std::fmt::Display for SkipperStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SkipperStatus::Active => write!(f, "Actif (🟢)"),
             SkipperStatus::Inactive => write!(f, "Inactif (🔴)"),
+            SkipperStatus::Active => write!(f, "Actif (🟢)"),
         }
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
-#[serde(rename_all = "snake_case")]
 pub enum MatchMode {
     Exact,
     #[default]
     Prefix,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WhitelistEntry {
     pub command: String,
     pub keyring_key: String,
     #[serde(default)]
     pub match_mode: MatchMode,
+    #[serde(default)]
+    pub expires_at: Option<u64>,
+}
+
+impl WhitelistEntry {
+    pub fn is_expired(&self) -> bool {
+        if let Some(expires) = self.expires_at {
+            if let Ok(now) = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH) {
+                return now.as_secs() > expires;
+            }
+        }
+        false
+    }
 }

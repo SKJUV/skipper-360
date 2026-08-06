@@ -66,17 +66,39 @@ impl Config {
         format!("whitelist:{}", slug)
     }
 
-    pub fn add_whitelist_entry(&mut self, command: &str, match_mode: MatchMode) -> String {
+    pub fn clean_expired_entries(&mut self) {
+        self.whitelist.entries.retain(|e| !e.is_expired());
+    }
+
+    pub fn add_whitelist_entry_with_ttl(
+        &mut self,
+        command: &str,
+        match_mode: MatchMode,
+        ttl_seconds: Option<u64>,
+    ) -> String {
         let keyring_key = Self::generate_keyring_key(command);
         self.remove_whitelist_entry(command); // Overwrite if existing
+
+        let expires_at = ttl_seconds.map(|secs| {
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs();
+            now + secs
+        });
 
         self.whitelist.entries.push(WhitelistEntry {
             command: command.to_string(),
             keyring_key: keyring_key.clone(),
             match_mode,
+            expires_at,
         });
 
         keyring_key
+    }
+
+    pub fn add_whitelist_entry(&mut self, command: &str, match_mode: MatchMode) -> String {
+        self.add_whitelist_entry_with_ttl(command, match_mode, None)
     }
 
     pub fn remove_whitelist_entry(&mut self, command: &str) -> bool {
@@ -143,14 +165,20 @@ impl ConfigManager {
             ))
         })?;
 
-        toml::from_str(&content)
-            .map_err(|e| SkipperError::Config(format!("Erreur de parsing TOML: {}", e)))
+        let mut config: Config = toml::from_str(&content)
+            .map_err(|e| SkipperError::Config(format!("Erreur de parsing TOML: {}", e)))?;
+
+        config.clean_expired_entries();
+        Ok(config)
     }
 
     pub fn save(&self, config: &Config) -> Result<()> {
         self.ensure_config_dir()?;
 
-        let content = toml::to_string_pretty(config)
+        let mut config_to_save = config.clone();
+        config_to_save.clean_expired_entries();
+
+        let content = toml::to_string_pretty(&config_to_save)
             .map_err(|e| SkipperError::Config(format!("Erreur de sérialisation TOML: {}", e)))?;
 
         fs::write(&self.config_file, content).map_err(|e| {
@@ -207,6 +235,19 @@ mod tests {
 
         let removed = cfg.remove_whitelist_entry("ssh user@srv");
         assert!(removed);
+        assert_eq!(cfg.whitelist.entries.len(), 0);
+    }
+
+    #[test]
+    fn test_ttl_expiration() {
+        let mut cfg = Config::default();
+        cfg.add_whitelist_entry_with_ttl("temp_cmd", MatchMode::Exact, Some(1));
+        assert_eq!(cfg.whitelist.entries.len(), 1);
+        assert!(!cfg.whitelist.entries[0].is_expired());
+
+        std::thread::sleep(std::time::Duration::from_secs(2));
+        assert!(cfg.whitelist.entries[0].is_expired());
+        cfg.clean_expired_entries();
         assert_eq!(cfg.whitelist.entries.len(), 0);
     }
 }

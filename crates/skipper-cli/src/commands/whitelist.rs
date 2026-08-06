@@ -9,7 +9,11 @@ use owo_colors::OwoColorize;
 use secrecy::{ExposeSecret, SecretString};
 use skipper_core::{ConfigManager, KeyringManager, MatchMode, Request};
 
-pub async fn add(command: &[String], match_mode_flag: Option<String>) -> Result<()> {
+pub async fn add(
+    command: &[String],
+    match_mode_flag: Option<String>,
+    ttl_flag: Option<String>,
+) -> Result<()> {
     let cmd_str = command.join(" ");
     if cmd_str.trim().is_empty() {
         return Err(anyhow!("Veuillez préciser la commande à ajouter à la whitelist (ex: skipper whitelist add ssh user@srv)"));
@@ -34,10 +38,15 @@ pub async fn add(command: &[String], match_mode_flag: Option<String>) -> Result<
         _ => MatchMode::Prefix,
     };
 
+    let ttl_seconds = match ttl_flag.as_deref() {
+        Some(s) => Some(parse_duration_to_seconds(s)?),
+        None => None,
+    };
+
     let config_manager = ConfigManager::new()?;
     let mut config = config_manager.load()?;
 
-    let keyring_key = config.add_whitelist_entry(&cmd_str, match_mode);
+    let keyring_key = config.add_whitelist_entry_with_ttl(&cmd_str, match_mode, ttl_seconds);
 
     if !password_prompt.is_empty() {
         let secret = SecretString::from(password_prompt);
@@ -60,11 +69,16 @@ pub async fn add(command: &[String], match_mode_flag: Option<String>) -> Result<
     let req = Request::new("reload_config", serde_json::json!({}));
     let _ = client.send_request(req).await;
 
+    let ttl_desc = match ttl_seconds {
+        Some(sec) => format!(" (expire dans {}s)", sec),
+        None => "".to_string(),
+    };
+
     println!(
         "{}",
         format!(
-            "✅ Commande '{}' ajoutée avec succès [{:?}].",
-            cmd_str, match_mode
+            "✅ Commande '{}' ajoutée avec succès [{:?}]{}.",
+            cmd_str, match_mode, ttl_desc
         )
         .green()
         .bold()
@@ -146,7 +160,13 @@ pub fn list(show_passwords: bool) -> Result<()> {
             Cell::new("Commande").add_attribute(Attribute::Bold),
             Cell::new("Mode Match").add_attribute(Attribute::Bold),
             Cell::new("Mot de passe").add_attribute(Attribute::Bold),
+            Cell::new("Expiration (TTL)").add_attribute(Attribute::Bold),
         ]);
+
+    let now_secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
 
     for (i, entry) in config.whitelist.entries.iter().enumerate() {
         let pwd_display = if show_passwords {
@@ -158,14 +178,57 @@ pub fn list(show_passwords: bool) -> Result<()> {
             "••••••••".to_string()
         };
 
+        let ttl_display = match entry.expires_at {
+            Some(exp) => {
+                if exp > now_secs {
+                    format!("{}s restantes", exp - now_secs)
+                } else {
+                    "Expiré".to_string()
+                }
+            }
+            None => "Permanente".to_string(),
+        };
+
         table.add_row(vec![
             Cell::new(i + 1),
             Cell::new(&entry.command).fg(Color::Cyan),
             Cell::new(format!("{:?}", entry.match_mode)),
             Cell::new(pwd_display).fg(Color::Yellow),
+            Cell::new(ttl_display).fg(Color::Magenta),
         ]);
     }
 
     println!("{table}");
     Ok(())
+}
+
+fn parse_duration_to_seconds(input: &str) -> Result<u64> {
+    let s = input.trim();
+    if let Ok(num) = s.parse::<u64>() {
+        return Ok(num);
+    }
+
+    let len = s.len();
+    if len < 2 {
+        return Err(anyhow!(
+            "Format de durée TTL invalide (ex: 30s, 10m, 2h, 1d)"
+        ));
+    }
+
+    let unit = &s[len - 1..];
+    let num_str = &s[..len - 1];
+    let num: u64 = num_str
+        .parse()
+        .map_err(|_| anyhow!("Format numérique TTL invalide dans '{}'", s))?;
+
+    match unit {
+        "s" => Ok(num),
+        "m" => Ok(num * 60),
+        "h" => Ok(num * 3600),
+        "d" => Ok(num * 86400),
+        _ => Err(anyhow!(
+            "Unité de durée inconnue '{}' (utilisez s, m, h, d)",
+            unit
+        )),
+    }
 }

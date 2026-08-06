@@ -67,6 +67,9 @@ enum WhitelistAction {
         /// Mode de correspondance ("prefix" ou "exact")
         #[arg(short, long, value_name = "MODE")]
         mode: Option<String>,
+        /// Durée de vie temporaire (ex: 30s, 10m, 1h, 2d)
+        #[arg(short, long, value_name = "DURATION")]
+        ttl: Option<String>,
         /// La commande à surveiller
         #[arg(trailing_var_arg = true)]
         command: Vec<String>,
@@ -134,8 +137,8 @@ async fn main() -> Result<()> {
             }
         }
         Commands::Whitelist { action } => match action {
-            Some(WhitelistAction::Add { command, mode }) => {
-                commands::whitelist::add(&command, mode).await?;
+            Some(WhitelistAction::Add { command, mode, ttl }) => {
+                commands::whitelist::add(&command, mode, ttl).await?;
             }
             Some(WhitelistAction::Delete { command }) => {
                 commands::whitelist::delete(&command).await?;
