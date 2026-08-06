@@ -1,42 +1,166 @@
-.TH SKIPPER 1 "August 2026" "Skipper 360 v0.1.0" "User Commands"
+.TH SKIPPER 1 "August 2026" "Skipper 360 v0.2.2" "User Commands"
 .SH NAME
 skipper \- Automatic password keeper and PTY session supervisor CLI
 .SH SYNOPSIS
 .B skipper
 [\fICOMMAND\fR] [\fIOPTIONS\fR]
 .SH DESCRIPTION
-\fBSkipper 360\fR is an automatic password keeper and terminal supervisor.
-It monitors pseudo-terminals (PTYs), detects password prompts in real-time,
-and injects credentials securely from your OS Keyring.
+.B Skipper 360
+is an automatic password keeper and terminal pseudo-terminal (PTY) session supervisor for Linux systems.
+It monitors pseudo-terminals in real-time, detects interactive password prompts using regex pattern matching, and securely retrieves and injects credentials stored in your operating system's Keyring (GNOME Keyring, KDE KWallet, or Freedesktop Secret Service API).
+
+All sensitive memory operations are hardened using CPU speculation barriers (\fBLFENCE\fR / \fBISB\fR), cache line alignment (64-byte boundaries), physical cache line flushing (\fBCLFLUSH\fR), and memory zeroing (\fBzeroize\fR).
+
 .SH COMMANDS
+
 .TP
 .B init
-Initialize Skipper with your default user credentials and master password.
+Initialize Skipper 360 with default user credentials and master password.
+Pre-fills your current OS environment username and securely stores your master password in the OS Keyring under key \fBdefault_password\fR. Creates the default configuration file at \fB~/.config/skipper360/config.toml\fR.
+
 .TP
 .B activate
-Activate prompt monitoring and ensure background daemon (\fBskipperd\fR) is running.
+Activate active prompt monitoring.
+Ensures the background daemon (\fBskipperd\fR) is running (auto-spawns it if inactive) and sends an IPC activation request.
+
 .TP
 .B deactivate
-Deactivate active prompt monitoring.
+Deactivate prompt monitoring without shutting down the daemon.
+
 .TP
 .B status
-Display current system status, mode, active sessions, and whitelist.
+Display current system operational status, active daemon process PID, active PTY session count, timeout configuration, and a table of all registered whitelist entries with their match modes and expiration countdowns.
+
 .TP
 .B mode \fISTANDARD|SILENT\fR
-Set operational mode (Standard or Silent).
+Configure operational mode:
+.RS
+.IP \fBStandard\fR
+Display interactive console messages when prompts are detected and passwords are injected.
+.IP \fBSilent\fR
+Perform prompt detection and credential injection silently without printing status messages.
+.RE
+
 .TP
-.B whitelist \fI[add|delete|list]\fR
-Manage command whitelist entries and custom credentials.
+.B whitelist \fR[\fIaction\fR] [\fIOPTIONS\fR]
+Manage command whitelist entries and custom command-specific credentials.
+Subcommands:
+.RS
+.IP "\fBadd\fR [\fI--mode exact|prefix\fR] [\fI--ttl DURATION\fR] \fICOMMAND...\fR"
+Add a command to the whitelist. Prompts interactively for a command-specific password (leave empty to use default master password).
+.RS
+.IP "\fB-m, --mode\fR \fIexact|prefix\fR"
+Matching strategy: \fBprefix\fR (default) matches commands starting with the string; \fBexact\fR requires identical match.
+.IP "\fB-t, --ttl\fR \fIDURATION\fR"
+Set a temporary expiration duration (e.g. \fB30s\fR, \fB10m\fR, \fB1h\fR, \fB2d\fR, or seconds \fB3600\fR). Expired entries are automatically purged.
+.RE
+.IP "\fBdelete\fR \fICOMMAND...\fR"
+Remove a command from the whitelist and delete its credential from the OS Keyring.
+.IP "\fBlist\fR [\fI--show\fR]"
+Display a table of registered whitelist entries. If \fB--show\fR is specified, displays cleartext passwords (requires \fBsudo\fR / root privileges).
+.RE
+
 .TP
 .B run \fICOMMAND...\fR
-Run a command under Skipper 360 PTY supervision.
+Execute a command under Skipper 360 PTY supervision (e.g. \fBskipper run sudo pacman -Syu\fR).
+Streams stdout and stderr output in real-time over Unix Domain Socket IPC, monitors PTY output for password prompts, and performs zeroed memory injection.
+
 .TP
-.B completion \fIBASH|ZSH|FISH\fR
-Generate shell auto-completion script.
+.B audit
+Display the security audit log history in a formatted UTF-8 table. Shows timestamps, user, process PID, actions (\fBPasswordInjected\fR, \fBPromptDetected\fR, \fBWhitelistAdded\fR, \fBWhitelistDeleted\fR), command slugs, and details. Reads from \fB~/.config/skipper360/audit.log\fR (POSIX mode 0600).
+
+.TP
+.B log \fR[\fIshow|clear\fR]
+Manage daemon execution logs.
+.RS
+.IP "\fBshow\fR [\fI--lines N\fR]"
+Display the last \fIN\fR lines (default: 50) of the current daily rolling daemon log file.
+.IP "\fBclear\fR"
+Purge all log files in \fB~/.config/skipper360/logs/\fR.
+.RE
+
+.TP
+.B completion \fIBASH|ZSH|FISH|POWERSHELL|ELVISH\fR
+Generate shell auto-completion script for the specified shell.
+
 .TP
 .B doctor
-Run system diagnostic health check.
+Run a comprehensive diagnostic health check verifying configuration file integrity, OS Keyring backend availability, IPC socket state, and POSIX PTY platform compatibility.
+
+.TP
+.B reset
+Reset all Skipper 360 configuration files and wipe stored keyring credentials.
+
+.SH ENVIRONMENT
+
+.TP
+.B XDG_CONFIG_HOME
+Specifies the base directory for user configuration. Defaults to \fB~/.config\fR. Skipper files are stored in \fB$XDG_CONFIG_HOME/skipper360/\fR.
+.TP
+.B USER
+Default username pre-filled during \fBskipper init\fR.
+.TP
+.B PATH
+Used by \fBskipper-cli\fR to locate and auto-spawn the \fBskipperd\fR daemon executable.
+
+.SH FILES
+
+.TP
+.I ~/.config/skipper360/config.toml
+Main TOML configuration file containing general settings, default credentials, whitelist entries, and custom prompt patterns. Mode 0600.
+.TP
+.I ~/.config/skipper360/skipper.sock
+Unix Domain Socket used for client-daemon IPC communication. Mode 0600.
+.TP
+.I ~/.config/skipper360/skipper.pid
+PID lockfile ensuring single-instance daemon operation.
+.TP
+.I ~/.config/skipper360/audit.log
+Append-only JSON-lines security audit event log. Mode 0600.
+.TP
+.I ~/.config/skipper360/logs/skipper.log.YYYY-MM-DD
+Daily rolling daemon execution log files. Mode 0600, directory mode 0700.
+
+.SH EXIT STATUS
+
+.TP
+.B 0
+Success.
+.TP
+.B 1
+General error (configuration, IPC, Keyring, or command failure).
+.TP
+.B 101
+Fatal Rust panic or unhandled internal error.
+.TP
+.B 127
+Command not found or daemon binary missing from PATH.
+
+.SH EXAMPLES
+
+.TP
+.B Initialize Skipper 360:
+$ skipper init
+.TP
+.B Activate background monitoring:
+$ skipper activate
+.TP
+.B Add a command with 1-hour expiration TTL:
+$ skipper whitelist add "ssh user@staging" --ttl 1h
+.TP
+.B Execute a command under PTY supervision:
+$ skipper run sudo pacman -Syu
+.TP
+.B View security audit history:
+$ skipper audit
+.TP
+.B View recent daemon execution logs:
+$ skipper log show --lines 100
+
 .SH SEE ALSO
-.BR skipperd (8)
+.BR skipperd (8),
+.BR systemctl (1),
+.BR secret-tool (1)
+
 .SH AUTHORS
 Skipper 360 Contributors.
