@@ -2,8 +2,8 @@ use crate::injector::PasswordInjector;
 use crate::pty::detector::PromptDetector;
 use portable_pty::{native_pty_system, CommandBuilder, PtySize};
 use skipper_core::{
-    apply_kernel_hardened_prctl, flush_cache_line, speculation_barrier, Config, Result,
-    SkipperError,
+    apply_kernel_hardened_prctl, flush_cache_line, speculation_barrier, AuditAction, AuditLogger,
+    Config, Result, SkipperError,
 };
 use std::io::{Read, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -21,6 +21,7 @@ impl PtySession {
         }
 
         apply_kernel_hardened_prctl();
+        let audit_logger = AuditLogger::new().ok();
 
         let pty_system = native_pty_system();
         let pair = pty_system
@@ -87,6 +88,13 @@ impl PtySession {
                                 "Prompt de mot de passe détecté via le pattern : '{}'",
                                 pattern
                             );
+                            if let Some(ref al) = audit_logger {
+                                let _ = al.log(
+                                    AuditAction::PromptDetected,
+                                    &full_command_str,
+                                    format!("Pattern : {}", pattern),
+                                );
+                            }
 
                             if let Ok(password) =
                                 PasswordInjector::resolve_password(&full_command_str, &config_clone)
@@ -102,6 +110,13 @@ impl PtySession {
                                     let _ = writer.flush();
                                     injected.store(true, Ordering::SeqCst);
                                     tracing::info!("Mot de passe injecté avec succès dans le PTY.");
+                                    if let Some(ref al) = audit_logger {
+                                        let _ = al.log(
+                                            AuditAction::PasswordInjected,
+                                            &full_command_str,
+                                            "Mot de passe injecté dans le PTY",
+                                        );
+                                    }
                                 }
 
                                 flush_cache_line(aligned_buf.data.as_ptr(), aligned_buf.len);

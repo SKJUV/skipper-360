@@ -1,3 +1,4 @@
+pub mod audit;
 pub mod config;
 pub mod doctor;
 pub mod errors;
@@ -7,6 +8,7 @@ pub mod protocol;
 pub mod security;
 pub mod types;
 
+pub use audit::{AuditAction, AuditEntry, AuditLogger};
 pub use config::{Config, ConfigManager};
 pub use doctor::{DiagnosticItem, DiagnosticReport};
 pub use errors::{Result, SkipperError};

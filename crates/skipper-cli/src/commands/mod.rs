@@ -1,3 +1,4 @@
+pub mod audit;
 pub mod completion;
 pub mod doctor;
 pub mod init;

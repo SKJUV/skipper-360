@@ -46,6 +46,8 @@ enum Commands {
         #[arg(trailing_var_arg = true)]
         command: Vec<String>,
     },
+    /// Afficher le journal d'audit de sécurité
+    Audit,
     /// Générer les scripts d'auto-complétion pour votre shell (bash, zsh, fish)
     Completion {
         /// Nom du shell (bash, zsh, fish)
@@ -91,6 +93,7 @@ async fn main() -> Result<()> {
         Commands::Init => commands::init::run()?,
         Commands::Status => commands::status::run().await?,
         Commands::Doctor => commands::doctor::run()?,
+        Commands::Audit => commands::audit::run()?,
         Commands::Completion { shell } => {
             let mut cmd = Cli::command();
             commands::completion::generate_completion(&shell, &mut cmd)?;
