@@ -93,7 +93,7 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Init => commands::init::run()?,
+        Commands::Init => commands::init::run().await?,
         Commands::Status => commands::status::run().await?,
         Commands::Doctor => commands::doctor::run()?,
         Commands::Audit => commands::audit::run()?,
@@ -154,6 +154,11 @@ async fn main() -> Result<()> {
             commands::run::run(&command).await?;
         }
         Commands::Reset => {
+            if let Ok(manager) = skipper_core::ConfigManager::new() {
+                let _ = std::fs::remove_file(manager.config_path());
+            }
+            let _ = skipper_core::KeyringManager::delete_default_password();
+            ipc::notify_daemon_reload().await;
             println!(
                 "[WARN] {}",
                 "Réinitialisation de la configuration effectuée.".yellow()

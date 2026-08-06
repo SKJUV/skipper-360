@@ -10,12 +10,18 @@ pub struct GeneralConfig {
     pub mode: OperatingMode,
     #[serde(default = "default_timeout")]
     pub timeout_seconds: u32,
+    #[serde(default = "default_focus_detection")]
+    pub focus_detection: bool,
     #[serde(default)]
     pub auto_activate: bool,
 }
 
 fn default_timeout() -> u32 {
-    30
+    10
+}
+
+fn default_focus_detection() -> bool {
+    true
 }
 
 impl Default for GeneralConfig {
@@ -23,6 +29,7 @@ impl Default for GeneralConfig {
         Self {
             mode: OperatingMode::Standard,
             timeout_seconds: default_timeout(),
+            focus_detection: default_focus_detection(),
             auto_activate: false,
         }
     }

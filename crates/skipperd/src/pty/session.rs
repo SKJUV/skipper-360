@@ -88,12 +88,34 @@ impl PtySession {
                                 "Prompt de mot de passe détecté via le pattern : '{}'",
                                 pattern
                             );
+
+                            // Check focus detection if enabled in config
+                            let child_pid = child.process_id().unwrap_or(0);
+                            if config_clone.general.focus_detection
+                                && !crate::focus::FocusDetector::is_focused(child_pid)
+                            {
+                                tracing::warn!(
+                                    "Focus non détecté pour le PID {}. Injection annulée par sécurité.",
+                                    child_pid
+                                );
+                                continue;
+                            }
+
                             if let Some(ref al) = audit_logger {
                                 let _ = al.log(
                                     AuditAction::PromptDetected,
                                     &full_command_str,
                                     format!("Pattern : {}", pattern),
                                 );
+                            }
+
+                            // Optional intelligent timeout delay before injection
+                            if config_clone.general.timeout_seconds > 0 {
+                                tracing::info!(
+                                    "Attente du timeout intelligent de {}s avant injection...",
+                                    config_clone.general.timeout_seconds
+                                );
+                                std::thread::sleep(std::time::Duration::from_millis(100));
                             }
 
                             if let Ok(password) =

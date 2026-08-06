@@ -1,4 +1,3 @@
-use crate::ipc::IpcClient;
 use anyhow::{anyhow, Result};
 use comfy_table::modifiers::UTF8_ROUND_CORNERS;
 use comfy_table::presets::UTF8_FULL;
@@ -7,7 +6,7 @@ use dialoguer::Password;
 use nix::unistd::Uid;
 use owo_colors::OwoColorize;
 use secrecy::{ExposeSecret, SecretString};
-use skipper_core::{ConfigManager, KeyringManager, MatchMode, Request};
+use skipper_core::{ConfigManager, KeyringManager, MatchMode};
 
 pub async fn add(
     command: &[String],
@@ -54,9 +53,7 @@ pub async fn add(
     config_manager.save(&config)?;
 
     // Notify daemon via IPC if running
-    let client = IpcClient::new()?;
-    let req = Request::new("reload_config", serde_json::json!({}));
-    let _ = client.send_request(req).await;
+    crate::ipc::notify_daemon_reload().await;
 
     let ttl_desc = match ttl_seconds {
         Some(sec) => format!(" (TTL {}s)", sec),
@@ -92,9 +89,7 @@ pub async fn delete(command: &[String]) -> Result<()> {
         config_manager.save(&config)?;
 
         // Notify daemon via IPC
-        let client = IpcClient::new()?;
-        let req = Request::new("reload_config", serde_json::json!({}));
-        let _ = client.send_request(req).await;
+        crate::ipc::notify_daemon_reload().await;
 
         println!(
             "{}",

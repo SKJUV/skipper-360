@@ -107,3 +107,12 @@ impl IpcClient {
         Ok(response)
     }
 }
+
+pub async fn notify_daemon_reload() {
+    if let Ok(client) = IpcClient::new() {
+        if client.is_daemon_running().await {
+            let req = Request::new("reload_config", serde_json::json!({}));
+            let _ = client.send_request(req).await;
+        }
+    }
+}
