@@ -1,0 +1,25 @@
+.TH SKIPPERD 8 "August 2026" "Skipper 360 v0.1.0" "System Administration Commands"
+.SH NAME
+skipperd \- Skipper 360 PTY session supervisor daemon
+.SH SYNOPSIS
+.B skipperd
+.SH DESCRIPTION
+\fBskipperd\fR is the background daemon component of Skipper 360.
+It manages single-instance PID locking, listens for IPC requests over a Unix Domain Socket (\fB~/.config/skipper360/skipper.sock\fR), allocates PTY sessions, detects password prompts via regex patterns, and performs secure memory-zeroed password injection from the OS Keyring.
+.SH FILES
+.TP
+.I ~/.config/skipper360/config.toml
+Main TOML configuration file.
+.TP
+.I ~/.config/skipper360/skipper.sock
+Unix Domain Socket (mode 0600) for IPC communication.
+.TP
+.I ~/.config/skipper360/skipper.pid
+PID lockfile preventing multiple daemon instances.
+.TP
+.I ~/.config/skipper360/skipper.log
+Daemon execution and audit logfile.
+.SH SEE ALSO
+.BR skipper (1)
+.SH AUTHORS
+Skipper 360 Contributors.

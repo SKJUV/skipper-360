@@ -1,0 +1,42 @@
+# Maintainer: Skipper 360 Contributors <skjuve@manjaro.org>
+pkgname=skipper360-git
+pkgver=0.1.0.r0.g1272d67
+pkgrel=1
+pkgdesc="Automatic password keeper and PTY session supervisor for Linux"
+arch=('x86_64' 'aarch64')
+url="https://github.com/SKJUV/skipper-360"
+license=('MIT' 'Apache')
+depends=('gcc-libs' 'glibc' 'libsecret')
+makedepends=('cargo' 'git')
+provides=('skipper' 'skipperd')
+conflicts=('skipper' 'skipperd')
+source=("git+https://github.com/SKJUV/skipper-360.git")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/skipper-360"
+  git describe --long --tags 2>/dev/null | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g' || printf "0.1.0.r%s.g%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd "$srcdir/skipper-360"
+  cargo build --release --locked --all-targets
+}
+
+check() {
+  cd "$srcdir/skipper-360"
+  cargo test --release --locked --workspace
+}
+
+package() {
+  cd "$srcdir/skipper-360"
+  install -Dm755 "target/release/skipper" "$pkgdir/usr/bin/skipper"
+  install -Dm755 "target/release/skipperd" "$pkgdir/usr/bin/skipperd"
+
+  install -Dm644 "systemd/skipperd.service" "$pkgdir/usr/lib/systemd/user/skipperd.service"
+  install -Dm644 "man/skipper.1" "$pkgdir/usr/share/man/man1/skipper.1"
+  install -Dm644 "man/skipperd.8" "$pkgdir/usr/share/man/man8/skipperd.8"
+
+  install -Dm644 "LICENSE-MIT" "$pkgdir/usr/share/licenses/$pkgname/LICENSE-MIT"
+  install -Dm644 "LICENSE-APACHE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE-APACHE"
+}

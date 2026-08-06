@@ -1,0 +1,42 @@
+.TH SKIPPER 1 "August 2026" "Skipper 360 v0.1.0" "User Commands"
+.SH NAME
+skipper \- Automatic password keeper and PTY session supervisor CLI
+.SH SYNOPSIS
+.B skipper
+[\fICOMMAND\fR] [\fIOPTIONS\fR]
+.SH DESCRIPTION
+\fBSkipper 360\fR is an automatic password keeper and terminal supervisor.
+It monitors pseudo-terminals (PTYs), detects password prompts in real-time,
+and injects credentials securely from your OS Keyring.
+.SH COMMANDS
+.TP
+.B init
+Initialize Skipper with your default user credentials and master password.
+.TP
+.B activate
+Activate prompt monitoring and ensure background daemon (\fBskipperd\fR) is running.
+.TP
+.B deactivate
+Deactivate active prompt monitoring.
+.TP
+.B status
+Display current system status, mode, active sessions, and whitelist.
+.TP
+.B mode \fISTANDARD|SILENT\fR
+Set operational mode (Standard or Silent).
+.TP
+.B whitelist \fI[add|delete|list]\fR
+Manage command whitelist entries and custom credentials.
+.TP
+.B run \fICOMMAND...\fR
+Run a command under Skipper 360 PTY supervision.
+.TP
+.B completion \fIBASH|ZSH|FISH\fR
+Generate shell auto-completion script.
+.TP
+.B doctor
+Run system diagnostic health check.
+.SH SEE ALSO
+.BR skipperd (8)
+.SH AUTHORS
+Skipper 360 Contributors.

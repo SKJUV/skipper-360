@@ -1,0 +1,15 @@
+[Unit]
+Description=Skipper 360 Password Keeper Daemon
+Documentation=man:skipperd(8) https://github.com/SKJUV/skipper-360
+After=network.target sound.target
+
+[Service]
+Type=simple
+ExecStart=%h/.cargo/bin/skipperd
+Restart=on-failure
+RestartSec=3s
+ProtectSystem=full
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target
