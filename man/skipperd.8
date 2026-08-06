@@ -1,25 +1,109 @@
-.TH SKIPPERD 8 "August 2026" "Skipper 360 v0.1.0" "System Administration Commands"
+.TH SKIPPERD 8 "August 2026" "Skipper 360 v0.2.2" "System Administration Commands"
 .SH NAME
 skipperd \- Skipper 360 PTY session supervisor daemon
 .SH SYNOPSIS
 .B skipperd
 .SH DESCRIPTION
-\fBskipperd\fR is the background daemon component of Skipper 360.
-It manages single-instance PID locking, listens for IPC requests over a Unix Domain Socket (\fB~/.config/skipper360/skipper.sock\fR), allocates PTY sessions, detects password prompts via regex patterns, and performs secure memory-zeroed password injection from the OS Keyring.
+.B skipperd
+is the background daemon service component of \fBSkipper 360\fR.
+It manages single-instance PID locking, listens for IPC requests over a Unix Domain Socket (\fB~/.config/skipper360/skipper.sock\fR), allocates pseudo-terminals (PTYs), detects interactive password prompts via regex patterns, and performs secure memory-zeroed password injection from the OS Keyring.
+
+The daemon also features a dynamic configuration file watcher (\fBnotify\fR) that automatically reloads \fBconfig.toml\fR changes in real-time without restarting, and a daily rolling log appender (\fBtracing-appender\fR) with strict POSIX permissions (mode 0700 directory, mode 0600 log files).
+
+.SH SECURITY ARCHITECTURE & HARDENING
+
+.TP
+.B Memory Isolation & Alignment
+Secret password memory buffers (\fBAlignedSecretBuffer\fR) are strictly allocated with 64-byte cache line alignment (\fB#[repr(align(64))]\fR) to isolate secret data from adjacent memory addresses and prevent CPU hardware prefetcher side-channel leaks.
+
+.TP
+.B Hardware Speculation Barriers
+Explicit hardware speculation barrier instructions (\fB_mm_lfence()\fR on x86_64, \fBisb sy\fR on ARM64) are executed immediately before and after credential injection to serialize CPU instruction execution pipelines and block speculative load execution.
+
+.TP
+.B Physical Cache Line Flushing
+The physical CPU cache line containing secret data is evicted using the \fB_mm_clflush\fR instruction immediately after writing to the PTY master device.
+
+.TP
+.B Process Dump Protection
+Linux \fBprctl(PR_SET_DUMPABLE, 0)\fR is invoked on startup to prevent ptrace attachment, coredumps, and unprivileged process memory inspection. Speculative Store Bypass (\fBPR_SPEC_STORE_BYPASS\fR) is disabled via \fBprctl\fR on x86_64.
+
+.TP
+.B IPC Payload Bounding
+IPC requests over the Unix Domain Socket are bounded using \fBAsyncReadExt::take(65536)\fR (64 KiB max request size) to prevent memory exhaustion and Denial-of-Service (DoS) attacks.
+
+.TP
+.B Memory Zeroing
+All secret buffers implement \fBZeroize\fR and are zero-overwritten in RAM upon \fBDrop\fR.
+
+.SH CONFIGURATION FILE SCHEMA (\fBconfig.toml\fR)
+
+The configuration file is located at \fB~/.config/skipper360/config.toml\fR. Example structure:
+
+.RS
+.nf
+[general]
+mode = "standard"        # "standard" or "silent"
+timeout_seconds = 30     # Prompt detection timeout
+auto_activate = false
+
+[default_credentials]
+username = "skjuve"
+
+[[whitelist.entries]]
+command = "su"
+keyring_key = "whitelist:su"
+match_mode = "prefix"   # "prefix" or "exact"
+expires_at = 1786000000 # Optional Unix epoch timestamp (TTL)
+
+[patterns]
+custom_patterns = [
+    "[pP]assword:?",
+    "[sS]udo"
+]
+.fi
+.RE
+
+.SH SIGNALS
+
+.TP
+.B SIGINT / SIGTERM
+Triggers a graceful shutdown of the daemon, closing active IPC listeners, removing the Unix Domain Socket, and releasing the PID lockfile.
+
+.SH SYSTEMD INTEGRATION
+
+The daemon can be managed as a Systemd user service:
+.RS
+.nf
+$ systemctl --user enable --now skipperd.service
+$ systemctl --user status skipperd.service
+$ systemctl --user restart skipperd.service
+.fi
+.RE
+
 .SH FILES
+
 .TP
 .I ~/.config/skipper360/config.toml
-Main TOML configuration file.
+Main configuration file. Mode 0600.
 .TP
 .I ~/.config/skipper360/skipper.sock
-Unix Domain Socket (mode 0600) for IPC communication.
+Unix Domain Socket for IPC. Mode 0600.
 .TP
 .I ~/.config/skipper360/skipper.pid
-PID lockfile preventing multiple daemon instances.
+PID lockfile preventing multiple daemon instances. Mode 0600.
 .TP
-.I ~/.config/skipper360/skipper.log
-Daemon execution and audit logfile.
+.I ~/.config/skipper360/audit.log
+Append-only JSON-lines security audit event log. Mode 0600.
+.TP
+.I ~/.config/skipper360/logs/skipper.log.YYYY-MM-DD
+Daily rolling daemon log file. Directory mode 0700, files mode 0600.
+
 .SH SEE ALSO
-.BR skipper (1)
+.BR skipper (1),
+.BR systemctl (1),
+.BR prctl (2),
+.BR ptrace (2)
+
 .SH AUTHORS
 Skipper 360 Contributors.
