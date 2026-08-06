@@ -48,6 +48,11 @@ enum Commands {
     },
     /// Afficher le journal d'audit de sécurité
     Audit,
+    /// Consulter ou vider les journaux d'exécution du daemon
+    Log {
+        #[command(subcommand)]
+        action: Option<LogAction>,
+    },
     /// Générer les scripts d'auto-complétion pour votre shell (bash, zsh, fish)
     Completion {
         /// Nom du shell (bash, zsh, fish)
@@ -88,6 +93,18 @@ enum WhitelistAction {
     },
 }
 
+#[derive(Subcommand)]
+enum LogAction {
+    /// Afficher les dernières lignes du journal daemon
+    Show {
+        /// Nombre de lignes à afficher (défaut: 50)
+        #[arg(short, long, default_value = "50")]
+        lines: usize,
+    },
+    /// Purger tous les fichiers de journaux daemon
+    Clear,
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -97,6 +114,11 @@ async fn main() -> Result<()> {
         Commands::Status => commands::status::run().await?,
         Commands::Doctor => commands::doctor::run()?,
         Commands::Audit => commands::audit::run()?,
+        Commands::Log { action } => match action {
+            Some(LogAction::Show { lines }) => commands::log::show(lines)?,
+            Some(LogAction::Clear) => commands::log::clear()?,
+            None => commands::log::show(50)?,
+        },
         Commands::Completion { shell } => {
             let mut cmd = Cli::command();
             commands::completion::generate_completion(&shell, &mut cmd)?;
