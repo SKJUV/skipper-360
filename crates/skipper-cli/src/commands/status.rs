@@ -8,10 +8,7 @@ use skipper_core::{ConfigManager, Request, ResponseStatus};
 
 pub async fn run() -> Result<()> {
     println!("{}", "Skipper 360 — Etat du Systeme".bold());
-    println!(
-        "{}",
-        "──────────────────────────────────────────────────".dimmed()
-    );
+    println!("{}", "──────────────────────────────────────────────────".dimmed());
 
     let client = IpcClient::new()?;
     let is_running = client.is_daemon_running().await;
@@ -25,7 +22,12 @@ pub async fn run() -> Result<()> {
             Ok(resp) => {
                 if resp.status == ResponseStatus::Ok {
                     if let Some(val) = resp.data {
-                        let active = val.get("active").and_then(|v| v.as_bool()).unwrap_or(false);
+                        let active = val
+                            .get("status")
+                            .and_then(|v| v.as_str())
+                            .map(|s| s.eq_ignore_ascii_case("active"))
+                            .unwrap_or(false);
+
                         let mode = val
                             .get("mode")
                             .and_then(|v| v.as_str())
@@ -46,14 +48,8 @@ pub async fn run() -> Result<()> {
                         println!("  Mode          : {}", mode.bold());
                         println!("  Daemon        : PID {}", pid);
                         println!("  Sessions      : {} actives", active_sessions);
-                        println!(
-                            "  Timeout       : {} secondes",
-                            config.general.timeout_seconds
-                        );
-                        println!(
-                            "  Config        : {}",
-                            config_manager.config_path().display()
-                        );
+                        println!("  Timeout       : {} secondes", config.general.timeout_seconds);
+                        println!("  Config        : {}", config_manager.config_path().display());
                     }
                 }
             }
@@ -64,18 +60,12 @@ pub async fn run() -> Result<()> {
     } else {
         println!("  Statut        : Arrêté");
         println!("  Mode          : {}", config.general.mode);
-        println!(
-            "  Config        : {}",
-            config_manager.config_path().display()
-        );
+        println!("  Config        : {}", config_manager.config_path().display());
     }
 
     println!();
     println!("{}", "Whitelist des Commandes".bold());
-    println!(
-        "{}",
-        "──────────────────────────────────────────────────".dimmed()
-    );
+    println!("{}", "──────────────────────────────────────────────────".dimmed());
 
     if config.whitelist.entries.is_empty() {
         println!("  Aucune commande dans la whitelist.");
