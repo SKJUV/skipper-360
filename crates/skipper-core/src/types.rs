@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
 pub enum OperatingMode {
     #[default]
     Standard,
@@ -17,6 +18,7 @@ impl std::fmt::Display for OperatingMode {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
 pub enum SkipperStatus {
     #[default]
     Inactive,
@@ -26,13 +28,14 @@ pub enum SkipperStatus {
 impl std::fmt::Display for SkipperStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SkipperStatus::Inactive => write!(f, "Inactif (🔴)"),
-            SkipperStatus::Active => write!(f, "Actif (🟢)"),
+            SkipperStatus::Inactive => write!(f, "Inactive"),
+            SkipperStatus::Active => write!(f, "Active"),
         }
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
 pub enum MatchMode {
     Exact,
     #[default]

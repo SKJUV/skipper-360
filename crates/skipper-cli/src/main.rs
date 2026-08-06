@@ -11,8 +11,8 @@ use skipper_core::Request;
 #[command(
     name = "skipper",
     version,
-    about = "🛡️ Skipper 360 — Gardien automatique de mots de passe",
-    long_about = "Skipper 360 est un outil CLI et daemon qui surveille les PTYs et injecte automatiquement les mots de passe de manière sécurisée."
+    about = "Skipper 360 - Password Keeper & Terminal Supervisor Daemon",
+    long_about = "Skipper 360 monitors terminal PTYs, detects password prompts in real-time, and injects secure OS Keyring credentials."
 )]
 struct Cli {
     #[command(subcommand)]
@@ -105,34 +105,34 @@ async fn main() -> Result<()> {
             let client = IpcClient::new()?;
             if let Err(e) = client.ensure_daemon_running().await {
                 eprintln!(
-                    "{}",
-                    format!("❌ Échec au démarrage du daemon : {}", e).red()
+                    "[ERR] {}",
+                    format!("Échec au démarrage du daemon : {}", e).red()
                 );
                 return Ok(());
             }
 
             let req = Request::new("activate", serde_json::json!({}));
             match client.send_request(req).await {
-                Ok(resp) => println!("{}", format!("🟢 {}", resp.message).green().bold()),
-                Err(e) => eprintln!("{}", format!("❌ Échec d'activation : {}", e).red()),
+                Ok(resp) => println!("[OK] {}", resp.message.bold().green()),
+                Err(e) => eprintln!("[ERR] {}", format!("Échec d'activation : {}", e).red()),
             }
         }
         Commands::Deactivate => {
             let client = IpcClient::new()?;
             let req = Request::new("deactivate", serde_json::json!({}));
             match client.send_request(req).await {
-                Ok(resp) => println!("{}", format!("🔴 {}", resp.message).yellow().bold()),
-                Err(e) => eprintln!("{}", format!("❌ Échec de désactivation : {}", e).red()),
+                Ok(resp) => println!("[INFO] {}", resp.message.bold().yellow()),
+                Err(e) => eprintln!("[ERR] {}", format!("Échec de désactivation : {}", e).red()),
             }
         }
         Commands::Mode { mode } => {
             let client = IpcClient::new()?;
             let req = Request::new("set_mode", serde_json::json!({ "mode": mode }));
             match client.send_request(req).await {
-                Ok(resp) => println!("{}", format!("⚙️  {}", resp.message).cyan().bold()),
+                Ok(resp) => println!("[INFO] {}", resp.message.bold().cyan()),
                 Err(e) => eprintln!(
-                    "{}",
-                    format!("❌ Échec de changement de mode : {}", e).red()
+                    "[ERR] {}",
+                    format!("Échec de changement de mode : {}", e).red()
                 ),
             }
         }
@@ -154,7 +154,10 @@ async fn main() -> Result<()> {
             commands::run::run(&command).await?;
         }
         Commands::Reset => {
-            println!("{}", "⚠️ Réinitialisation effectuée.".yellow());
+            println!(
+                "[WARN] {}",
+                "Réinitialisation de la configuration effectuée.".yellow()
+            );
         }
     }
 

@@ -6,22 +6,17 @@ use owo_colors::OwoColorize;
 use skipper_core::AuditLogger;
 
 pub fn run() -> Result<()> {
+    println!("{}", "Skipper 360 — Journal d'Audit de Securite".bold());
     println!(
         "{}",
-        "📜 Skipper 360 — Journal d'Audit de Sécurité".bold().blue()
+        "──────────────────────────────────────────────────".dimmed()
     );
-    println!("{}", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".dimmed());
 
     let logger = AuditLogger::new()?;
     let entries = logger.read_entries()?;
 
     if entries.is_empty() {
-        println!(
-            "{}",
-            "   Aucun événement d'audit enregistré pour le moment."
-                .italic()
-                .dimmed()
-        );
+        println!("  Aucun événement d'audit enregistré.");
         return Ok(());
     }
 

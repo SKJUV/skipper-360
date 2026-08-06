@@ -32,12 +32,29 @@ impl IpcClient {
         }
     }
 
+    pub async fn connect(&self) -> Result<UnixStream> {
+        if !self.socket_path.exists() {
+            return Err(anyhow!(
+                "Le daemon skipperd n'est pas démarré (socket introuvable : {}).\nTapez 'skipper activate' pour démarrer le daemon.",
+                self.socket_path.display()
+            ));
+        }
+
+        UnixStream::connect(&self.socket_path).await.map_err(|e| {
+            anyhow!(
+                "Impossible de se connecter au socket du daemon ({}): {}",
+                self.socket_path.display(),
+                e
+            )
+        })
+    }
+
     pub async fn ensure_daemon_running(&self) -> Result<()> {
         if self.is_daemon_running().await {
             return Ok(());
         }
 
-        println!("⚙️  Démarrage automatique du daemon skipperd en arrière-plan...");
+        println!("[+] Démarrage automatique du daemon skipperd en arrière-plan...");
 
         let spawn_res = std::process::Command::new("skipperd")
             .stdin(std::process::Stdio::null())
@@ -67,20 +84,7 @@ impl IpcClient {
     }
 
     pub async fn send_request(&self, req: Request) -> Result<Response> {
-        if !self.socket_path.exists() {
-            return Err(anyhow!(
-                "Le daemon skipperd n'est pas démarré (socket introuvable : {}).\n💡 Conseil : Lancer 'skipper activate' pour démarrer automatiquement le daemon.",
-                self.socket_path.display()
-            ));
-        }
-
-        let stream = UnixStream::connect(&self.socket_path).await.map_err(|e| {
-            anyhow!(
-                "Impossible de se connecter au socket du daemon ({}): {}",
-                self.socket_path.display(),
-                e
-            )
-        })?;
+        let stream = self.connect().await?;
 
         let (reader, mut writer) = stream.into_split();
         let mut buf_reader = BufReader::new(reader);

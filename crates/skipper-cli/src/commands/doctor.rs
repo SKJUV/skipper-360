@@ -2,59 +2,65 @@ use anyhow::Result;
 use indicatif::{ProgressBar, ProgressStyle};
 use owo_colors::OwoColorize;
 use skipper_core::DiagnosticReport;
+use std::thread;
 use std::time::Duration;
 
 pub fn run() -> Result<()> {
+    println!("{}", "Skipper 360 — Diagnostic de Sante Systeme".bold());
     println!(
         "{}",
-        "🩺 Skipper 360 — Diagnostic Système (Doctor)".bold().blue()
+        "──────────────────────────────────────────────────".dimmed()
     );
-    println!("{}", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".dimmed());
 
-    let pb = ProgressBar::new_spinner();
+    let pb = ProgressBar::new(4);
     pb.set_style(
         ProgressStyle::default_spinner()
             .tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
-            .template("{spinner:.green} {msg}")
-            .expect("Invalid spinner template"),
+            .template("{spinner:.blue} {msg}")
+            .expect("Style valide"),
     );
 
-    pb.set_message("Analyse des composants du système en cours...");
-    pb.enable_steady_tick(Duration::from_millis(80));
+    pb.set_message("Vérification des composants système...");
+    thread::sleep(Duration::from_millis(300));
 
-    std::thread::sleep(Duration::from_millis(400));
     let report = DiagnosticReport::run();
     pb.finish_and_clear();
 
-    let mut total_passed = 0;
-
+    let mut all_passed = true;
     for item in &report.items {
-        if item.status {
-            total_passed += 1;
-            println!("  ✅ {:<30} : {}", item.name.bold(), item.details.green());
-        } else {
-            println!("  ❌ {:<30} : {}", item.name.bold(), item.details.red());
+        if !item.status {
+            all_passed = false;
         }
+
+        let status_str = if item.status {
+            "[OK]".bold().green().to_string()
+        } else {
+            "[FAIL]".bold().red().to_string()
+        };
+
+        println!(
+            "  {:6} {:30} : {}",
+            status_str,
+            item.name.bold(),
+            item.details
+        );
     }
 
-    println!("{}", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".dimmed());
-    if total_passed == report.items.len() {
+    println!(
+        "{}",
+        "──────────────────────────────────────────────────".dimmed()
+    );
+    if all_passed {
         println!(
             "{}",
-            "🎉 Tous les composants de Skipper 360 sont sains et opérationnels !"
-                .green()
+            "[OK] Tous les composants sont sains et operationnels."
                 .bold()
+                .green()
         );
     } else {
         println!(
             "{}",
-            format!(
-                "⚠️ {}/{} vérifications validées.",
-                total_passed,
-                report.items.len()
-            )
-            .yellow()
-            .bold()
+            "[WARN] Des anomalies ont ete detectees.".bold().yellow()
         );
     }
 

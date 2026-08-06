@@ -19,17 +19,12 @@ pub async fn add(
         return Err(anyhow!("Veuillez préciser la commande à ajouter à la whitelist (ex: skipper whitelist add ssh user@srv)"));
     }
 
-    println!(
-        "{}",
-        format!(
-            "📋 Ajout de la commande à la whitelist : {}",
-            cmd_str.bold()
-        )
-        .blue()
-    );
+    println!("Ajout de la commande à la whitelist : {}", cmd_str.bold());
 
     let password_prompt = Password::new()
-        .with_prompt("🔒 Mot de passe pour cette commande (laissez vide pour utiliser le mot de passe par défaut)")
+        .with_prompt(
+            "Mot de passe spécifique (laissez vide pour utiliser le mot de passe par défaut)",
+        )
         .allow_empty_password(true)
         .interact()?;
 
@@ -51,15 +46,9 @@ pub async fn add(
     if !password_prompt.is_empty() {
         let secret = SecretString::from(password_prompt);
         KeyringManager::store_whitelist_password(&keyring_key, &secret)?;
-        println!(
-            "{}",
-            "✅ Mot de passe spécifique enregistré dans le trousseau système.".green()
-        );
+        println!("[OK] Mot de passe spécifique enregistré dans le trousseau système.");
     } else {
-        println!(
-            "{}",
-            "ℹ️  Aucun mot de passe saisi, l'entrée utilisera le mot de passe par défaut.".cyan()
-        );
+        println!("[INFO] Aucun mot de passe saisi, l'entrée utilisera le mot de passe par défaut.");
     }
 
     config_manager.save(&config)?;
@@ -70,14 +59,14 @@ pub async fn add(
     let _ = client.send_request(req).await;
 
     let ttl_desc = match ttl_seconds {
-        Some(sec) => format!(" (expire dans {}s)", sec),
+        Some(sec) => format!(" (TTL {}s)", sec),
         None => "".to_string(),
     };
 
     println!(
         "{}",
         format!(
-            "✅ Commande '{}' ajoutée avec succès [{:?}]{}.",
+            "[OK] Commande '{}' ajoutée [{:?}]{}.",
             cmd_str, match_mode, ttl_desc
         )
         .green()
@@ -109,18 +98,14 @@ pub async fn delete(command: &[String]) -> Result<()> {
 
         println!(
             "{}",
-            format!("✅ Commande '{}' supprimée de la whitelist.", cmd_str)
+            format!("[OK] Commande '{}' supprimée de la whitelist.", cmd_str)
                 .yellow()
                 .bold()
         );
     } else {
         println!(
             "{}",
-            format!(
-                "⚠️  La commande '{}' n'a pas été trouvée dans la whitelist.",
-                cmd_str
-            )
-            .red()
+            format!("[ERR] La commande '{}' n'a pas été trouvée.", cmd_str).red()
         );
     }
 
@@ -132,22 +117,17 @@ pub fn list(show_passwords: bool) -> Result<()> {
     let config = config_manager.load()?;
 
     if show_passwords && !Uid::effective().is_root() {
-        return Err(anyhow!("🔒 L'affichage des mots de passe en clair exige des privilèges de super-utilisateur (sudo skipper whitelist list --show)"));
+        return Err(anyhow!("L'affichage des mots de passe exige des privilèges de super-utilisateur (sudo skipper whitelist list --show)"));
     }
 
+    println!("{}", "Skipper 360 — Whitelist des Commandes".bold());
     println!(
         "{}",
-        "🛡️  Skipper 360 — Whitelist des Commandes".bold().blue()
+        "──────────────────────────────────────────────────".dimmed()
     );
-    println!("{}", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".dimmed());
 
     if config.whitelist.entries.is_empty() {
-        println!(
-            "{}",
-            "   Aucune commande enregistrée dans la whitelist."
-                .italic()
-                .dimmed()
-        );
+        println!("  Aucune commande enregistrée dans la whitelist.");
         return Ok(());
     }
 
@@ -172,7 +152,7 @@ pub fn list(show_passwords: bool) -> Result<()> {
         let pwd_display = if show_passwords {
             match KeyringManager::get_whitelist_password(&entry.keyring_key) {
                 Ok(secret) => secret.expose_secret().to_string(),
-                Err(_) => "(mot de passe par défaut)".italic().to_string(),
+                Err(_) => "(mot de passe par défaut)".to_string(),
             }
         } else {
             "••••••••".to_string()
@@ -211,7 +191,7 @@ fn parse_duration_to_seconds(input: &str) -> Result<u64> {
     let len = s.len();
     if len < 2 {
         return Err(anyhow!(
-            "Format de durée TTL invalide (ex: 30s, 10m, 2h, 1d)"
+            "Format de durée TTL invalide (ex: 30s, 10m, 1h, 2d)"
         ));
     }
 

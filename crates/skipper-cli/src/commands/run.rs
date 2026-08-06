@@ -1,43 +1,37 @@
 use crate::ipc::IpcClient;
 use anyhow::{anyhow, Result};
 use owo_colors::OwoColorize;
-use skipper_core::{Request, Response, ResponseStatus, StreamMessage};
+use skipper_core::{Request, ResponseStatus, StreamMessage};
 use std::io::Write;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::net::UnixStream;
+use tokio::io::{AsyncBufReadExt, BufReader};
 
 pub async fn run(command: &[String]) -> Result<()> {
     if command.is_empty() {
-        return Err(anyhow!(
-            "Veuillez spécifier une commande à exécuter (ex: skipper run sudo pacman -Syu)"
-        ));
+        return Err(anyhow!("Veuillez fournir la commande à exécuter sous surveillance (ex: skipper run sudo pacman -Syu)"));
     }
 
     let client = IpcClient::new()?;
-    client.ensure_daemon_running().await?;
+    if let Err(e) = client.ensure_daemon_running().await {
+        eprintln!(
+            "[ERR] {}",
+            format!("Impossible de démarrer le daemon skipperd : {}", e).red()
+        );
+        return Ok(());
+    }
 
     let req = Request::new("run", serde_json::json!({ "command": command }));
 
-    let base_dir = dirs::config_dir()
-        .ok_or_else(|| anyhow!("Impossible de localiser le répertoire config"))?;
-    let socket_path = base_dir.join("skipper360").join("skipper.sock");
-
-    let stream = UnixStream::connect(&socket_path).await.map_err(|e| {
-        anyhow!(
-            "Impossible de se connecter au socket du daemon ({}): {}",
-            socket_path.display(),
-            e
-        )
-    })?;
-
-    let (reader, mut writer) = stream.into_split();
-    let mut buf_reader = BufReader::new(reader);
-
+    let mut stream = client.connect().await?;
     let req_json = serde_json::to_string(&req)?;
-    writer
+
+    use tokio::io::AsyncWriteExt;
+    stream
         .write_all(format!("{}\n", req_json).as_bytes())
         .await?;
+    stream.flush().await?;
 
+    let (reader, _) = stream.into_split();
+    let mut buf_reader = BufReader::new(reader);
     let mut line = String::new();
 
     loop {
@@ -69,25 +63,16 @@ pub async fn run(command: &[String]) -> Result<()> {
                     if code != 0 {
                         std::process::exit(code);
                     }
-                    break;
+                    return Ok(());
                 }
             }
             continue;
         }
 
-        // Try parsing as final Response
-        if let Ok(resp) = serde_json::from_str::<Response>(trimmed) {
-            if resp.status == ResponseStatus::Error {
-                eprintln!("{}", format!("❌ Error: {}", resp.message).red());
-                std::process::exit(1);
-            }
-
-            if let Some(data) = resp.data {
-                if let Some(code) = data.get("exit_code").and_then(|c| c.as_i64()) {
-                    if code != 0 {
-                        std::process::exit(code as i32);
-                    }
-                }
+        // Otherwise parse as final Response
+        if let Ok(resp) = serde_json::from_str::<skipper_core::Response>(trimmed) {
+            if resp.status != ResponseStatus::Ok {
+                eprintln!("[ERR] {}", resp.message.red());
             }
             break;
         }
