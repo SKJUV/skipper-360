@@ -37,7 +37,12 @@ pub fn speculation_barrier() {
 
     #[cfg(target_arch = "aarch64")]
     unsafe {
-        std::arch::aarch64::__isb(std::arch::aarch64::SY);
+        std::arch::asm!("isb sy");
+    }
+
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+    {
+        std::sync::atomic::compiler_fence(std::sync::atomic::Ordering::SeqCst);
     }
 }
 
@@ -46,22 +51,22 @@ pub fn speculation_barrier() {
 /// # Safety
 /// Le pointeur `ptr` doit pointer vers une adresse mémoire valide pour l'expulsion de la ligne de cache.
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub fn flush_cache_line(ptr: *const u8, _len: usize) {
+pub fn flush_cache_line(_ptr: *const u8, _len: usize) {
     speculation_barrier();
     #[cfg(target_arch = "x86_64")]
     unsafe {
-        std::arch::x86_64::_mm_clflush(ptr);
+        std::arch::x86_64::_mm_clflush(_ptr);
     }
     speculation_barrier();
 }
 
 /// Activation des protections noyau anti-spéculation (prctl Linux)
 pub fn apply_kernel_hardened_prctl() {
-    #[cfg(target_os = "linux")]
+    #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
     {
         use nix::libc::{prctl, PR_SET_SPECULATION_CTRL, PR_SPEC_DISABLE, PR_SPEC_STORE_BYPASS};
         unsafe {
-            // Désactive le Speculative Store Bypass (Spectre-v4)
+            // Désactive le Speculative Store Bypass (Spectre-v4) sur x86_64
             let _ = prctl(
                 PR_SET_SPECULATION_CTRL,
                 PR_SPEC_STORE_BYPASS,
