@@ -179,12 +179,10 @@ async fn main() -> Result<()> {
                 "Réinitialisation de la configuration effectuée.".yellow()
             );
         }
-        Commands::CheckWhitelist { command } => {
-            match commands::check_whitelist::check(&command) {
-                Ok(true) => std::process::exit(0),
-                _ => std::process::exit(1),
-            }
-        }
+        Commands::CheckWhitelist { command } => match commands::check_whitelist::check(&command) {
+            Ok(true) => std::process::exit(0),
+            _ => std::process::exit(1),
+        },
     }
 
     Ok(())

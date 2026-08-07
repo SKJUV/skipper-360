@@ -109,12 +109,17 @@ impl PtySession {
                                 continue;
                             }
 
-                            let is_whitelisted = config_clone.whitelist.entries.iter().any(|entry| {
-                                match entry.match_mode {
-                                    skipper_core::MatchMode::Exact => full_command_str == entry.command,
-                                    skipper_core::MatchMode::Prefix => full_command_str.starts_with(&entry.command),
-                                }
-                            });
+                            let is_whitelisted =
+                                config_clone.whitelist.entries.iter().any(|entry| {
+                                    match entry.match_mode {
+                                        skipper_core::MatchMode::Exact => {
+                                            full_command_str == entry.command
+                                        }
+                                        skipper_core::MatchMode::Prefix => {
+                                            full_command_str.starts_with(&entry.command)
+                                        }
+                                    }
+                                });
 
                             if let Some(ref al) = audit_logger {
                                 let _ = al.log(
@@ -145,12 +150,18 @@ impl PtySession {
                                     let _ = al.log(
                                         AuditAction::TimeoutElapsed,
                                         &full_command_str,
-                                        format!("Timeout de {}s écoulé", config_clone.general.timeout_seconds),
+                                        format!(
+                                            "Timeout de {}s écoulé",
+                                            config_clone.general.timeout_seconds
+                                        ),
                                     );
                                 }
                             }
 
-                            match PasswordInjector::resolve_password(&full_command_str, &config_clone) {
+                            match PasswordInjector::resolve_password(
+                                &full_command_str,
+                                &config_clone,
+                            ) {
                                 Ok(password) => {
                                     let aligned_buf =
                                         PasswordInjector::format_aligned_buffer(&password);
@@ -162,7 +173,9 @@ impl PtySession {
                                     {
                                         let _ = writer.flush();
                                         injected.store(true, Ordering::SeqCst);
-                                        tracing::info!("Mot de passe injecté avec succès dans le PTY.");
+                                        tracing::info!(
+                                            "Mot de passe injecté avec succès dans le PTY."
+                                        );
                                         if let Some(ref al) = audit_logger {
                                             let _ = al.log(
                                                 AuditAction::PasswordInjected,
