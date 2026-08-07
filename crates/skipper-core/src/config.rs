@@ -10,12 +10,18 @@ pub struct GeneralConfig {
     pub mode: OperatingMode,
     #[serde(default = "default_timeout")]
     pub timeout_seconds: u32,
+    #[serde(default = "default_focus_detection")]
+    pub focus_detection: bool,
     #[serde(default)]
     pub auto_activate: bool,
 }
 
 fn default_timeout() -> u32 {
-    30
+    10
+}
+
+fn default_focus_detection() -> bool {
+    true
 }
 
 impl Default for GeneralConfig {
@@ -23,6 +29,7 @@ impl Default for GeneralConfig {
         Self {
             mode: OperatingMode::Standard,
             timeout_seconds: default_timeout(),
+            focus_detection: default_focus_detection(),
             auto_activate: false,
         }
     }
@@ -45,6 +52,23 @@ pub struct PatternsConfig {
     pub custom_patterns: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KeywordsConfig {
+    #[serde(default = "crate::patterns::get_default_simple_keywords")]
+    pub simple_keywords: Vec<String>,
+    #[serde(default = "crate::patterns::get_default_combined_keywords")]
+    pub combined_keywords: Vec<Vec<String>>,
+}
+
+impl Default for KeywordsConfig {
+    fn default() -> Self {
+        Self {
+            simple_keywords: crate::patterns::get_default_simple_keywords(),
+            combined_keywords: crate::patterns::get_default_combined_keywords(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {
     #[serde(default)]
@@ -55,6 +79,8 @@ pub struct Config {
     pub whitelist: WhitelistConfig,
     #[serde(default)]
     pub patterns: PatternsConfig,
+    #[serde(default)]
+    pub keywords: KeywordsConfig,
 }
 
 impl Config {

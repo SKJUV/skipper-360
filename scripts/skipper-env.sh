@@ -1,8 +1,15 @@
-# Skipper 360 Environment Integration Script
-# This file is automatically sourced by your shell configuration (~/.zshrc, ~/.bashrc, etc.)
+# Skipper 360 Environment Integration & Dynamic Whitelist Supervisor Script
+# Sourced automatically by ~/.zshrc or ~/.bashrc
 
-if [ -n "$ZSH_VERSION" ] || [ -n "$BASH_VERSION" ]; then
-    # POSIX Shell Aliases for Skipper 360
+if [ -n "$ZSH_VERSION" ]; then
+    # ZSH integration with fallback wrappers for Whitelist commands
+    alias sudo='skipper run sudo'
+    alias pacman='skipper run pacman'
+    alias ssh='skipper run ssh'
+    alias su='skipper run su'
+
+elif [ -n "$BASH_VERSION" ]; then
+    # BASH integration
     alias sudo='skipper run sudo'
     alias pacman='skipper run pacman'
     alias ssh='skipper run ssh'

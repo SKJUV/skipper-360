@@ -4,7 +4,7 @@ use owo_colors::OwoColorize;
 use secrecy::SecretString;
 use skipper_core::{Config, ConfigManager, KeyringManager};
 
-pub fn run() -> Result<()> {
+pub async fn run() -> Result<()> {
     println!("{}", "Skipper 360 — Initialisation Système".bold());
     println!(
         "{}",
@@ -31,6 +31,7 @@ pub fn run() -> Result<()> {
     config.default_credentials.username = Some(username);
 
     config_manager.save(&config)?;
+    crate::ipc::notify_daemon_reload().await;
     println!(
         "[OK] Fichier de configuration créé : {}",
         config_manager.config_path().display().to_string().cyan()

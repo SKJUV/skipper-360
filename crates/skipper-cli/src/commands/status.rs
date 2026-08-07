@@ -42,6 +42,12 @@ pub async fn run() -> Result<()> {
                             "Inactif".bold().yellow().to_string()
                         };
 
+                        let focus_str = if config.general.focus_detection {
+                            "Activée".bold().green().to_string()
+                        } else {
+                            "Désactivée".bold().red().to_string()
+                        };
+
                         println!("  Statut        : {}", state_str);
                         println!("  Mode          : {}", mode.bold());
                         println!("  Daemon        : PID {}", pid);
@@ -50,6 +56,7 @@ pub async fn run() -> Result<()> {
                             "  Timeout       : {} secondes",
                             config.general.timeout_seconds
                         );
+                        println!("  Focus Detect  : {}", focus_str);
                         println!(
                             "  Config        : {}",
                             config_manager.config_path().display()
@@ -62,8 +69,19 @@ pub async fn run() -> Result<()> {
             }
         }
     } else {
+        let focus_str = if config.general.focus_detection {
+            "Activée".bold().green().to_string()
+        } else {
+            "Désactivée".bold().red().to_string()
+        };
+
         println!("  Statut        : Arrêté");
         println!("  Mode          : {}", config.general.mode);
+        println!(
+            "  Timeout       : {} secondes",
+            config.general.timeout_seconds
+        );
+        println!("  Focus Detect  : {}", focus_str);
         println!(
             "  Config        : {}",
             config_manager.config_path().display()

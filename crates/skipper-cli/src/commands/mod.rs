@@ -1,7 +1,9 @@
 pub mod audit;
+pub mod check_whitelist;
 pub mod completion;
 pub mod doctor;
 pub mod init;
 pub mod run;
 pub mod status;
+pub mod timeout;
 pub mod whitelist;

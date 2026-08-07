@@ -6,7 +6,11 @@ use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AuditAction {
+    CommandExecuted,
+    WhitelistMatched,
+    TimeoutElapsed,
     PasswordInjected,
+    PasswordInjectionFailed,
     PromptDetected,
     WhitelistAdded,
     WhitelistDeleted,

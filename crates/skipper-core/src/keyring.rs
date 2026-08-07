@@ -16,6 +16,10 @@ impl KeyringManager {
         Self::get(DEFAULT_KEY)
     }
 
+    pub fn delete_default_password() -> Result<()> {
+        Self::delete(DEFAULT_KEY)
+    }
+
     pub fn store_whitelist_password(key: &str, password: &SecretString) -> Result<()> {
         Self::store(key, password)
     }
