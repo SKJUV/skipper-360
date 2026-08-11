@@ -14,6 +14,9 @@ pub enum SkipperError {
     #[error("Erreur de gestion PTY: {0}")]
     Pty(String),
 
+    #[error("Erreur de gestion des shims: {0}")]
+    Shim(String),
+
     #[error("Permission refusée: {0}")]
     PermissionDenied(String),
 

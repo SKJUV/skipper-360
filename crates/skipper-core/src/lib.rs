@@ -6,6 +6,7 @@ pub mod keyring;
 pub mod patterns;
 pub mod protocol;
 pub mod security;
+pub mod shims;
 pub mod types;
 
 pub use audit::{AuditAction, AuditEntry, AuditLogger};
@@ -18,4 +19,5 @@ pub use protocol::{Request, Response, ResponseStatus, StreamMessage};
 pub use security::{
     apply_kernel_hardened_prctl, flush_cache_line, speculation_barrier, AlignedSecretBuffer,
 };
+pub use shims::*;
 pub use types::{MatchMode, OperatingMode, SkipperStatus, WhitelistEntry};

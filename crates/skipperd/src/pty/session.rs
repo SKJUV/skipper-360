@@ -37,6 +37,7 @@ impl PtySession {
         if command.len() > 1 {
             cmd.args(&command[1..]);
         }
+        cmd.env("SKIPPER_SHIM_BYPASS", "1");
 
         let mut child = pair.slave.spawn_command(cmd).map_err(|e| {
             SkipperError::Pty(format!(
