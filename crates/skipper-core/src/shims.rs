@@ -12,14 +12,20 @@ pub fn get_shims_dir() -> Result<PathBuf> {
     let base_dir = dirs::data_local_dir()
         .or_else(|| dirs::home_dir().map(|h| h.join(".local/share")))
         .ok_or_else(|| {
-            SkipperError::Shim("Impossible de localiser le répertoire de données de l'utilisateur".into())
+            SkipperError::Shim(
+                "Impossible de localiser le répertoire de données de l'utilisateur".into(),
+            )
         })?;
     Ok(base_dir.join("skipper").join("shims"))
 }
 
 pub fn get_skipper_binary_path() -> Result<PathBuf> {
     if let Ok(exe) = std::env::current_exe() {
-        if exe.file_name().and_then(|n| n.to_str()).map_or(false, |name| name.starts_with("skipper")) {
+        if exe
+            .file_name()
+            .and_then(|n| n.to_str())
+            .map_or(false, |name| name.starts_with("skipper"))
+        {
             return Ok(exe);
         }
     }
@@ -57,7 +63,11 @@ pub fn sync_shims(config: &Config) -> Result<Vec<String>> {
     let shims_dir = get_shims_dir()?;
     if !shims_dir.exists() {
         fs::create_dir_all(&shims_dir).map_err(|e| {
-            SkipperError::Shim(format!("Échec de création du répertoire de shims {}: {}", shims_dir.display(), e))
+            SkipperError::Shim(format!(
+                "Échec de création du répertoire de shims {}: {}",
+                shims_dir.display(),
+                e
+            ))
         })?;
     }
 
@@ -114,7 +124,11 @@ pub fn install_shims(config: &Config) -> Result<Vec<String>> {
     let shims_dir = get_shims_dir()?;
     if !shims_dir.exists() {
         fs::create_dir_all(&shims_dir).map_err(|e| {
-            SkipperError::Shim(format!("Échec de création de {}: {}", shims_dir.display(), e))
+            SkipperError::Shim(format!(
+                "Échec de création de {}: {}",
+                shims_dir.display(),
+                e
+            ))
         })?;
     }
     sync_shims(config)
@@ -211,12 +225,16 @@ pub fn run_shim(argv0: &str, args: &[String]) -> Result<()> {
 
     // Check if bypass flag is set to prevent recursive loops
     if std::env::var("SKIPPER_SHIM_BYPASS").is_ok() {
-        let real_bin = find_real_binary(cmd_name)
-            .unwrap_or_else(|| PathBuf::from("/usr/bin").join(cmd_name));
+        let real_bin =
+            find_real_binary(cmd_name).unwrap_or_else(|| PathBuf::from("/usr/bin").join(cmd_name));
         let mut cmd = std::process::Command::new(&real_bin);
         cmd.args(args);
         let err = cmd.exec();
-        return Err(SkipperError::Shim(format!("Échec de l'exécution de {}: {}", real_bin.display(), err)));
+        return Err(SkipperError::Shim(format!(
+            "Échec de l'exécution de {}: {}",
+            real_bin.display(),
+            err
+        )));
     }
 
     let command_str = if args.is_empty() {
@@ -226,7 +244,9 @@ pub fn run_shim(argv0: &str, args: &[String]) -> Result<()> {
     };
 
     let daemon_active = is_daemon_active();
-    let config = ConfigManager::new().and_then(|m| m.load()).unwrap_or_default();
+    let config = ConfigManager::new()
+        .and_then(|m| m.load())
+        .unwrap_or_default();
     let whitelisted = is_command_whitelisted(&command_str, &config);
 
     if daemon_active && whitelisted {
@@ -235,14 +255,21 @@ pub fn run_shim(argv0: &str, args: &[String]) -> Result<()> {
         cmd.arg("run").arg("--").arg(cmd_name).args(args);
         cmd.env("SKIPPER_SHIM_BYPASS", "1");
         let err = cmd.exec();
-        Err(SkipperError::Shim(format!("Échec d'exécution de 'skipper run': {}", err)))
+        Err(SkipperError::Shim(format!(
+            "Échec d'exécution de 'skipper run': {}",
+            err
+        )))
     } else {
-        let real_bin = find_real_binary(cmd_name)
-            .unwrap_or_else(|| PathBuf::from("/usr/bin").join(cmd_name));
+        let real_bin =
+            find_real_binary(cmd_name).unwrap_or_else(|| PathBuf::from("/usr/bin").join(cmd_name));
         let mut cmd = std::process::Command::new(&real_bin);
         cmd.args(args);
         let err = cmd.exec();
-        Err(SkipperError::Shim(format!("Échec d'exécution de {}: {}", real_bin.display(), err)))
+        Err(SkipperError::Shim(format!(
+            "Échec d'exécution de {}: {}",
+            real_bin.display(),
+            err
+        )))
     }
 }
 
@@ -266,7 +293,9 @@ mod tests {
         assert!(!is_shim_invocation("skipperd"));
         assert!(!is_shim_invocation("/usr/bin/skipperd"));
         assert!(is_shim_invocation("ssh"));
-        assert!(is_shim_invocation("/home/user/.local/share/skipper/shims/ssh"));
+        assert!(is_shim_invocation(
+            "/home/user/.local/share/skipper/shims/ssh"
+        ));
         assert!(is_shim_invocation("sudo"));
     }
 
