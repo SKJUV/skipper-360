@@ -53,6 +53,10 @@ pub async fn add(
 
     config_manager.save(&config)?;
 
+    if let Err(e) = skipper_core::sync_shims(&config) {
+        eprintln!("[WARN] Échec de la synchronisation des shims : {}", e);
+    }
+
     // Notify daemon via IPC if running
     let client = IpcClient::new()?;
     let req = Request::new("reload_config", serde_json::json!({}));
@@ -90,6 +94,10 @@ pub async fn delete(command: &[String]) -> Result<()> {
     if removed {
         let _ = KeyringManager::delete_whitelist_password(&keyring_key);
         config_manager.save(&config)?;
+
+        if let Err(e) = skipper_core::sync_shims(&config) {
+            eprintln!("[WARN] Échec de la synchronisation des shims : {}", e);
+        }
 
         // Notify daemon via IPC
         let client = IpcClient::new()?;

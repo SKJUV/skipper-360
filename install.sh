@@ -50,6 +50,9 @@ echo -e "  [OK] Pages de manuel installées dans ${GREEN}$MAN_DIR${RESET}"
 # 4. Auto-configuration des Shells (ZSH, BASH, FISH)
 echo -e "  [+] Configuration automatique des shells..."
 
+echo -e "  [+] Installation et synchronisation des shims Skipper..."
+"$BIN_DIR/skipper" shims install || true
+
 # ZSH
 if [ -f "$HOME/.zshrc" ]; then
     COMP_DIR="$HOME/.zsh/completion"

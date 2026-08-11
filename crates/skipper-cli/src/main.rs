@@ -40,6 +40,12 @@ enum Commands {
         #[command(subcommand)]
         action: Option<WhitelistAction>,
     },
+    /// Gérer les shims de commande transparents
+    #[command(alias = "s")]
+    Shims {
+        #[command(subcommand)]
+        action: ShimsAction,
+    },
     /// Exécuter une commande sous la surveillance de Skipper
     Run {
         /// La commande à exécuter
@@ -88,8 +94,27 @@ enum WhitelistAction {
     },
 }
 
+#[derive(Subcommand)]
+enum ShimsAction {
+    /// Synchroniser les shims avec la whitelist actuelle
+    Sync,
+    /// Installer le répertoire de shims et synchroniser
+    Install,
+    /// Supprimer tous les shims générés
+    Remove,
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
+    let args: Vec<String> = std::env::args().collect();
+    if let Some(argv0) = args.first() {
+        if skipper_core::is_shim_invocation(argv0) {
+            let shim_args = &args[1..];
+            let _ = skipper_core::run_shim(argv0, shim_args);
+            std::process::exit(1);
+        }
+    }
+
     let cli = Cli::parse();
 
     match cli.command {
@@ -149,6 +174,11 @@ async fn main() -> Result<()> {
             None => {
                 commands::whitelist::list(false)?;
             }
+        },
+        Commands::Shims { action } => match action {
+            ShimsAction::Sync => commands::shims::sync()?,
+            ShimsAction::Install => commands::shims::install()?,
+            ShimsAction::Remove => commands::shims::remove()?,
         },
         Commands::Run { command } => {
             commands::run::run(&command).await?;

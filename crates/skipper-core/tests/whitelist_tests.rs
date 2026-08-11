@@ -22,3 +22,21 @@ fn test_whitelist_entry_matching() {
     let full_cmd = "ssh user@serveur-prod -p 2222";
     assert!(full_cmd.starts_with(&prefix_entry.command));
 }
+
+#[test]
+fn test_auto_sync_shims_on_whitelist_mutation() {
+    use skipper_core::{sync_shims, Config, MatchMode};
+
+    let mut cfg = Config::default();
+    cfg.add_whitelist_entry("ssh user@host", MatchMode::Prefix);
+    cfg.add_whitelist_entry("pacman -Syu", MatchMode::Exact);
+
+    let synced = sync_shims(&cfg).expect("Sync shims failed");
+    assert!(synced.contains(&"ssh".to_string()));
+    assert!(synced.contains(&"pacman".to_string()));
+
+    cfg.remove_whitelist_entry("ssh user@host");
+    let synced_after = sync_shims(&cfg).expect("Sync shims failed");
+    assert!(!synced_after.contains(&"ssh".to_string()));
+    assert!(synced_after.contains(&"pacman".to_string()));
+}

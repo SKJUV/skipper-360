@@ -52,6 +52,7 @@ where
 
             if let Ok(manager) = ConfigManager::new() {
                 let _ = manager.save(&state_guard.config);
+                let _ = skipper_core::sync_shims(&state_guard.config);
             }
 
             Response::ok(format!("Mode changé vers {}", mode), None, req.request_id)
@@ -117,6 +118,7 @@ where
             if removed {
                 if let Ok(manager) = ConfigManager::new() {
                     let _ = manager.save(&state_guard.config);
+                    let _ = skipper_core::sync_shims(&state_guard.config);
                 }
                 Response::ok(
                     format!("Commande '{}' supprimée de la whitelist", cmd),
