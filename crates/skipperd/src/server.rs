@@ -1,20 +1,78 @@
 use crate::handler::handle_request;
 use crate::state::SharedState;
+use nix::sys::socket::{getsockopt, sockopt::PeerCredentials};
+use nix::unistd::getuid;
 use skipper_core::{apply_kernel_hardened_prctl, Request, Response, SkipperError, StreamMessage};
 use std::fs;
+use std::os::fd::AsFd;
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixListener;
 use tokio::sync::Mutex;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 const MAX_IPC_REQUEST_BYTES: u64 = 65_536; // 64 KiB max request size to prevent DoS
+const MAX_CONNECTIONS_PER_SECOND: usize = 20;
+
+pub struct IpcRateLimiter {
+    max_per_second: usize,
+    state: std::sync::Mutex<(std::time::Instant, usize)>,
+}
+
+impl IpcRateLimiter {
+    pub fn new(max_per_second: usize) -> Self {
+        Self {
+            max_per_second,
+            state: std::sync::Mutex::new((std::time::Instant::now(), 0)),
+        }
+    }
+
+    pub fn check_allow(&self) -> bool {
+        let mut guard = match self.state.lock() {
+            Ok(g) => g,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+        let now = std::time::Instant::now();
+        if now.duration_since(guard.0) >= std::time::Duration::from_secs(1) {
+            guard.0 = now;
+            guard.1 = 1;
+            true
+        } else if guard.1 < self.max_per_second {
+            guard.1 += 1;
+            true
+        } else {
+            false
+        }
+    }
+}
+
+fn verify_peer_uid<F: AsFd>(stream: &F) -> skipper_core::Result<()> {
+    let cred = getsockopt(stream, PeerCredentials).map_err(|e| {
+        SkipperError::Ipc(format!(
+            "Impossible d'obtenir les identifiants du peer Unix: {}",
+            e
+        ))
+    })?;
+
+    let peer_uid = cred.uid();
+    let current_uid = getuid().as_raw();
+
+    if peer_uid != current_uid {
+        return Err(SkipperError::Ipc(format!(
+            "Authentification peer échouée: UID client ({}) ne correspond pas à l'UID démon ({})",
+            peer_uid, current_uid
+        )));
+    }
+
+    Ok(())
+}
 
 pub struct IpcServer {
     socket_path: PathBuf,
     state: SharedState,
+    rate_limiter: Arc<IpcRateLimiter>,
 }
 
 impl IpcServer {
@@ -28,7 +86,11 @@ impl IpcServer {
         }
         let socket_path = socket_dir.join("skipper.sock");
 
-        Ok(Self { socket_path, state })
+        Ok(Self {
+            socket_path,
+            state,
+            rate_limiter: Arc::new(IpcRateLimiter::new(MAX_CONNECTIONS_PER_SECOND)),
+        })
     }
 
     pub async fn run(
@@ -59,6 +121,15 @@ impl IpcServer {
                 accept_result = listener.accept() => {
                     match accept_result {
                         Ok((stream, _)) => {
+                            if !self.rate_limiter.check_allow() {
+                                warn!("Tentative de connexion IPC rejetée: limite de débit dépassée (socket flooding)");
+                                drop(stream);
+                                continue;
+                            }
+                            if let Err(e) = verify_peer_uid(&stream) {
+                                warn!("Connexion IPC rejetée: {}", e);
+                                continue;
+                            }
                             let state = self.state.clone();
                             tokio::spawn(async move {
                                 let (reader, writer) = stream.into_split();
@@ -125,5 +196,31 @@ impl IpcServer {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::os::unix::net::UnixStream as StdUnixStream;
+
+    #[test]
+    fn test_peer_uid_verification() {
+        let (s1, _s2) = StdUnixStream::pair().expect("Failed to create unix socket pair");
+        let result = verify_peer_uid(&s1);
+        assert!(
+            result.is_ok(),
+            "verify_peer_uid should succeed for sockets created by current process (same UID)"
+        );
+    }
+
+    #[test]
+    fn test_ipc_rate_limiting() {
+        let limiter = IpcRateLimiter::new(5);
+        for _ in 0..5 {
+            assert!(limiter.check_allow());
+        }
+        // 6th attempt within the same second should be blocked
+        assert!(!limiter.check_allow());
     }
 }

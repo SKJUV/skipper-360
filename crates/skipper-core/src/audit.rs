@@ -28,6 +28,49 @@ pub struct AuditEntry {
     pub details: String,
 }
 
+use regex::Regex;
+use std::sync::OnceLock;
+
+/// Sanitize and redact potential secret strings, passwords, or tokens from audit log messages.
+pub fn redact_secrets(input: &str) -> String {
+    static REGEXES: OnceLock<Vec<(Regex, &'static str)>> = OnceLock::new();
+    let rules = REGEXES.get_or_init(|| {
+        vec![
+            // 1. Long flags like --password=xxx, --token xxx, --secret xxx
+            (
+                Regex::new(r#"(?i)(--(?:password|passwd|passphrase|secret|token|api[_-]?key|auth[_-]?token)(?:\s+|=))['"]?[^\s'"]+['"]?"#).unwrap(),
+                "$1[REDACTED]",
+            ),
+            // 2. Key-Value pairs like password=xxx, secret: xxx, mot de passe = xxx
+            (
+                Regex::new(r#"(?i)\b((?:password|passwd|passphrase|secret|token|api[_-]?key|auth[_-]?token|mot\s+de\s+passe)\s*[:=]\s*)['"]?[^\s'"]+['"]?"#).unwrap(),
+                "$1[REDACTED]",
+            ),
+            // 3. Authorization headers (Bearer / Basic)
+            (
+                Regex::new(r"(?i)\b((?:bearer|basic)\s+)[a-zA-Z0-9._~\+\/-]+=*").unwrap(),
+                "$1[REDACTED]",
+            ),
+            // 4. URL inline password: http://user:password@host
+            (
+                Regex::new(r"(?i)(https?://[^:\s]+:)[^@\s]+(@)").unwrap(),
+                "$1[REDACTED]$2",
+            ),
+            // 5. mysql/mariadb/pg_dump -pPassword inline password
+            (
+                Regex::new(r"(?i)\b(mysql|mariadb|pg_dump)\b(.*?\s+-p)\S+").unwrap(),
+                "$1$2[REDACTED]",
+            ),
+        ]
+    });
+
+    let mut result = input.to_string();
+    for (re, replacement) in rules {
+        result = re.replace_all(&result, *replacement).to_string();
+    }
+    result
+}
+
 pub struct AuditLogger {
     log_path: PathBuf,
 }
@@ -56,8 +99,8 @@ impl AuditLogger {
             user: std::env::var("USER").unwrap_or_else(|_| "unknown".into()),
             pid: std::process::id(),
             action,
-            command: command.into(),
-            details: details.into(),
+            command: redact_secrets(&command.into()),
+            details: redact_secrets(&details.into()),
         };
 
         let json_line = serde_json::to_string(&entry).map_err(|e| {
