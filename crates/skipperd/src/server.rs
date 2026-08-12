@@ -1,16 +1,16 @@
 use crate::handler::handle_request;
 use crate::state::SharedState;
+use nix::sys::socket::{getsockopt, sockopt::PeerCredentials};
+use nix::unistd::getuid;
 use skipper_core::{apply_kernel_hardened_prctl, Request, Response, SkipperError, StreamMessage};
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
+use std::os::unix::io::AsFd;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixListener;
 use tokio::sync::Mutex;
-use nix::sys::socket::{getsockopt, sockopt::PeerCredentials};
-use nix::unistd::getuid;
-use std::os::unix::io::AsFd;
 use tracing::{error, info, warn};
 
 const MAX_IPC_REQUEST_BYTES: u64 = 65_536; // 64 KiB max request size to prevent DoS
@@ -165,7 +165,9 @@ mod tests {
     fn test_peer_uid_verification() {
         let (s1, _s2) = StdUnixStream::pair().expect("Failed to create unix socket pair");
         let result = verify_peer_uid(&s1);
-        assert!(result.is_ok(), "verify_peer_uid should succeed for sockets created by current process (same UID)");
+        assert!(
+            result.is_ok(),
+            "verify_peer_uid should succeed for sockets created by current process (same UID)"
+        );
     }
 }
-
