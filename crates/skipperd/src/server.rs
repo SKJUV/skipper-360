@@ -1,16 +1,40 @@
 use crate::handler::handle_request;
 use crate::state::SharedState;
+use nix::sys::socket::{getsockopt, sockopt::PeerCredentials};
+use nix::unistd::getuid;
 use skipper_core::{apply_kernel_hardened_prctl, Request, Response, SkipperError, StreamMessage};
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
+use std::os::unix::io::AsFd;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixListener;
 use tokio::sync::Mutex;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 const MAX_IPC_REQUEST_BYTES: u64 = 65_536; // 64 KiB max request size to prevent DoS
+
+fn verify_peer_uid<F: AsFd>(stream: &F) -> skipper_core::Result<()> {
+    let cred = getsockopt(stream, PeerCredentials).map_err(|e| {
+        SkipperError::Ipc(format!(
+            "Impossible d'obtenir les identifiants du peer Unix: {}",
+            e
+        ))
+    })?;
+
+    let peer_uid = cred.uid();
+    let current_uid = getuid().as_raw();
+
+    if peer_uid != current_uid {
+        return Err(SkipperError::Ipc(format!(
+            "Authentification peer échouée: UID client ({}) ne correspond pas à l'UID démon ({})",
+            peer_uid, current_uid
+        )));
+    }
+
+    Ok(())
+}
 
 pub struct IpcServer {
     socket_path: PathBuf,
@@ -59,6 +83,10 @@ impl IpcServer {
                 accept_result = listener.accept() => {
                     match accept_result {
                         Ok((stream, _)) => {
+                            if let Err(e) = verify_peer_uid(&stream) {
+                                warn!("Connexion IPC rejetée: {}", e);
+                                continue;
+                            }
                             let state = self.state.clone();
                             tokio::spawn(async move {
                                 let (reader, writer) = stream.into_split();
@@ -125,5 +153,21 @@ impl IpcServer {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::os::unix::net::UnixStream as StdUnixStream;
+
+    #[test]
+    fn test_peer_uid_verification() {
+        let (s1, _s2) = StdUnixStream::pair().expect("Failed to create unix socket pair");
+        let result = verify_peer_uid(&s1);
+        assert!(
+            result.is_ok(),
+            "verify_peer_uid should succeed for sockets created by current process (same UID)"
+        );
     }
 }
