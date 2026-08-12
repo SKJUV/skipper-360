@@ -86,8 +86,8 @@ impl IpcServer {
         }
         let socket_path = socket_dir.join("skipper.sock");
 
-        Ok(Self { 
-            socket_path, 
+        Ok(Self {
+            socket_path,
             state,
             rate_limiter: Arc::new(IpcRateLimiter::new(MAX_CONNECTIONS_PER_SECOND)),
         })
@@ -208,7 +208,10 @@ mod tests {
     fn test_peer_uid_verification() {
         let (s1, _s2) = StdUnixStream::pair().expect("Failed to create unix socket pair");
         let result = verify_peer_uid(&s1);
-        assert!(result.is_ok(), "verify_peer_uid should succeed for sockets created by current process (same UID)");
+        assert!(
+            result.is_ok(),
+            "verify_peer_uid should succeed for sockets created by current process (same UID)"
+        );
     }
 
     #[test]
@@ -221,4 +224,3 @@ mod tests {
         assert!(!limiter.check_allow());
     }
 }
-
